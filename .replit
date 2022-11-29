@@ -1,4 +1,4 @@
-entrypoint = "dist/index.js"
+entrypoint = "dist/replit.js"
 
 hidden = [".config", "db-creds.json"]
 
