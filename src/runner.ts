@@ -4,7 +4,7 @@ import HTTP from 'http'
 
 import { DatabaseCredentials, Server, ServerOptions } from './core/server'
 
-const run = async (...args: string[]): Promise<void> => {
+const Run = async (...args: string[]): Promise<void> => {
   const options: Partial<ServerOptions> = {}
   const credentials: DatabaseCredentials = JSON.parse(FS.readFileSync(Path.join(process.cwd(), 'db-creds.json')).toString('utf-8'))
 
@@ -44,4 +44,4 @@ const run = async (...args: string[]): Promise<void> => {
   }
 }
 
-export default run
+export default Run

@@ -94,7 +94,7 @@ export class Server {
     const { mongoose, databaseCredentials } = this
 
     await mongoose.connect(((): string => {
-      const address: URL = new URL(`mongodb://${databaseCredentials.host}`)
+      const address: URL = new URL(`mongodb+srv://${databaseCredentials.host}`)
 
       if (databaseCredentials.port != null) {
         address.port = `${databaseCredentials.port}`
