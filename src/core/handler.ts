@@ -72,14 +72,24 @@ export class Handler {
       status: 200
     }
 
-    const { body, query } = request
+    const { body, query, pathArray } = request
+
+    const log = (): void => {
+      console.log({
+        request: {
+          path: pathArray.join('/'),
+          body,
+          query
+        },
+        response: payload
+      })
+    }
     await this.run(request, response)
       .then(async (data) => {
         if (data[0] === HandlerStatus.Redirect) {
           response.statusCode = 302
           response.setHeader('Location', data[1].toString())
 
-          console.log({ type: 'redirect', body, query, response: data })
           response.end()
           return
         } else if (data[0] === HandlerStatus.File) {
@@ -95,14 +105,12 @@ export class Handler {
             await new Promise<void>((resolve, reject) => response.write(buffer, (error) => error != null ? reject(error) : resolve()))
           }
 
-          console.log({ type: 'file', body, query, response: data })
           response.end()
           return
         } else if (data[0] === HandlerStatus.Binary) {
           response.setHeader('Content-Type', data[2])
           response.setHeader('Content-Length', data[1].length)
 
-          console.log({ type: 'binary', body, query, response: data })
           return
         }
 
@@ -113,8 +121,6 @@ export class Handler {
         } else if (data[0] === HandlerStatus.Error) {
           payload.error = this.wrapError(data[2] as any)
         }
-
-        console.log({ type: 'json', body, query, response: data })
       })
       .catch((error: Error) => {
         payload.status = 500
@@ -122,6 +128,7 @@ export class Handler {
         console.log({ type: 'error', body, query, response: error })
       })
 
+    log()
     if (!response.writableEnded) {
       response.setHeader('Content-Type', 'application/json')
       response.write(JSON.stringify(payload, undefined, '  '))
