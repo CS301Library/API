@@ -1,6 +1,6 @@
-entrypoint = "index.js"
+entrypoint = "dist/index.js"
 
-hidden = [".config"]
+hidden = [".config", "db-creds.json"]
 
 [interpreter]
 command = [
@@ -64,8 +64,8 @@ support = true
     [debugger.interactive.launchMessage]
     command = "launch"
     type = "request"
-    
-      [debugger.interactive.launchMessage.arguments]  
+
+      [debugger.interactive.launchMessage.arguments]
       args = []
       console = "externalTerminal"
       cwd = "."
