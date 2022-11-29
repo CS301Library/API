@@ -113,6 +113,8 @@ export class Handler {
         } else if (data[0] === HandlerStatus.Error) {
           payload.error = this.wrapError(data[2] as any)
         }
+
+        console.log({ type: 'json', body, query, response: data })
       })
       .catch((error: Error) => {
         payload.status = 500
