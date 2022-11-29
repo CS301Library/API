@@ -75,14 +75,20 @@ export class Handler {
     const { body, query, pathArray } = request
 
     const log = (): void => {
-      console.log({
+      console.log(JSON.stringify({
         request: {
           path: pathArray.join('/'),
           body,
-          query
+          query,
+          session: request.auth != null
+            ? {
+                account: request.auth.account.toJSON(),
+                session: request.auth.session.toJSON()
+              }
+            : null
         },
         response: payload
-      })
+      }, undefined, '  '))
     }
     await this.run(request, response)
       .then(async (data) => {
@@ -125,7 +131,6 @@ export class Handler {
       .catch((error: Error) => {
         payload.status = 500
         payload.error = this.wrapError(error as any)
-        console.log({ type: 'error', body, query, response: error })
       })
 
     log()
