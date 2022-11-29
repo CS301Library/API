@@ -75,10 +75,10 @@ export const handle = async (main: Handler, request: Express.Request, response: 
       }
 
       const { body: { name } } = request
-      if (name != null) {')
-        }
+      if (name != null) {
         if (typeof (name) !== 'string') {
-          return main.errorStatus(400, 'ParametersInvalid
+          return main.errorStatus(400, 'ParametersInvalid')
+        }
 
         account.name = name
       }
