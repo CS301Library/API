@@ -55,7 +55,6 @@ export class Server {
       express.use((request, response, next) => {
         const { path } = request
         request.pathArray = path.split('/').map(path => path.trim()).filter((entry) => entry.length > 0)
-        console.log(request.body)
         next()
       })
 

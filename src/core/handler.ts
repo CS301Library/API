@@ -72,12 +72,14 @@ export class Handler {
       status: 200
     }
 
+    const { body, query } = request
     await this.run(request, response)
       .then(async (data) => {
         if (data[0] === HandlerStatus.Redirect) {
           response.statusCode = 302
           response.setHeader('Location', data[1].toString())
 
+          console.log({ type: 'redirect', body, query, response: data })
           response.end()
           return
         } else if (data[0] === HandlerStatus.File) {
@@ -93,12 +95,14 @@ export class Handler {
             await new Promise<void>((resolve, reject) => response.write(buffer, (error) => error != null ? reject(error) : resolve()))
           }
 
+          console.log({ type: 'file', body, query, response: data })
           response.end()
           return
         } else if (data[0] === HandlerStatus.Binary) {
           response.setHeader('Content-Type', data[2])
           response.setHeader('Content-Length', data[1].length)
 
+          console.log({ type: 'binary', body, query, response: data })
           return
         }
 
@@ -113,6 +117,7 @@ export class Handler {
       .catch((error: Error) => {
         payload.status = 500
         payload.error = this.wrapError(error as any)
+        console.log({ type: 'error', body, query, response: error })
       })
 
     if (!response.writableEnded) {
@@ -150,7 +155,6 @@ export class Handler {
     const [{ server: { resources: { Account, Session } } }, { pathArray }] = [this, request]
 
     const auth = request.auth = await (async (): Promise<{ session: ResourceDocument<Session>, account: ResourceDocument<Account> } | undefined> => {
-      console.log(request.query)
       const sessionId = request.header('X-Session-ID') ?? request.query.sid
       const session = await Session.findOne({ id: sessionId })
       const account = session != null ? await Account.findOne({ id: session.accountId }) : undefined
