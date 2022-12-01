@@ -72,7 +72,7 @@ export class Handler {
       status: 200
     }
 
-    const { body, query, pathArray } = request
+    const { body, query, pathArray, method, headers } = request
 
     const log = (): void => {
       console.log(JSON.stringify({
@@ -80,6 +80,8 @@ export class Handler {
           path: pathArray.join('/'),
           body,
           query,
+          method,
+          headers,
           session: request.auth != null
             ? {
                 account: request.auth.account.toJSON(),
