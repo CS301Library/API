@@ -10,9 +10,11 @@ export interface BaseResource {
 export type ResourceDocument<T> = Mongoose.Document<unknown, any, T> & T
 
 export interface Account extends BaseResource {
-  name: string
-  username: string
+  givenName: string
+  middleName?: string
+  familyName: string
 
+  username: string
   isAdmin: boolean
 }
 
@@ -53,9 +55,11 @@ export class ResourceManager {
     this.Account = mongoose.model<Account>('Account', new mongoose.Schema({
       ...baseSchema,
 
-      name: { type: Mongoose.SchemaTypes.String, required: true },
-      username: { type: Mongoose.SchemaTypes.String, required: true },
+      givenName: { type: Mongoose.SchemaTypes.String, required: true },
+      middleName: { type: Mongoose.SchemaTypes.String, required: false },
+      familyName: { type: Mongoose.SchemaTypes.String, required: true },
 
+      username: { type: Mongoose.SchemaTypes.String, required: true },
       isAdmin: { type: Mongoose.SchemaTypes.Boolean, required: true }
     }))
 

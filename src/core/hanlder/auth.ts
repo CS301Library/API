@@ -64,8 +64,37 @@ export const handle = async (main: Handler, request: Express.Request, response: 
               })
 
               await session.save()
-              const { id } = session
-              return main.okStatus(200, { id })
+              return main.okStatus(200, { id: session.id })
+            }
+
+            case 'google': {
+              const { body: { tokenId } } = request
+              if (typeof (tokenId) !== 'string') {
+                return main.errorStatus(400, 'ParametersInvalid')
+              }
+              const token = await main.googleAuthClient.getTokenInfo(tokenId)
+              if (typeof (token.user_id) !== 'string') {
+                return main.errorStatus(400, 'GAuthUserIdNotAvailable')
+              }
+
+              const login = await Login.findOne({ signature: token.user_id, loginType: LoginType.Google })
+              if (login == null) {
+                return main.errorStatus(400, 'AuthNotAssociated')
+              }
+
+              const account = await Account.findOne({ id: login.accountId })
+              if (account == null) {
+                return main.errorStatus(404, 'AccountNotFound')
+              }
+
+              const session = new Session({
+                id: await RandomEssentials.randomHex(idLength, { checker: async (id) => await Session.exists({ id }) == null }),
+                accountId: account.id,
+                createTime: Date.now()
+              })
+
+              await session.save()
+              return main.okStatus(200, { id: session.id })
             }
 
             default: return main.errorStatus(400, 'ParametersInvalid')
@@ -73,10 +102,12 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         }
 
         case 'register': {
-          const { body: { name, username, password, email: emailAddress } } = request
+          const { body: { givenName, middleName, familyName, username, password, email: emailAddress } } = request
 
           if (
-            (typeof (name) !== 'string') ||
+            (typeof (givenName) !== 'string') ||
+            ((middleName != null) && (typeof (middleName) !== 'string')) ||
+            (typeof (familyName) !== 'string') ||
             (typeof (username) !== 'string') ||
             (typeof (password) !== 'string') ||
             (typeof (emailAddress) !== 'string')
@@ -125,7 +156,9 @@ export const handle = async (main: Handler, request: Express.Request, response: 
           const account = new Account({
             id: await RandomEssentials.randomHex(idLength, { checker: async (id) => await Account.exists({ id }) == null }),
             createTime: Date.now(),
-            name,
+            givenName,
+            middleName,
+            familyName,
             username: username.toLowerCase(),
             isAdmin: (await Account.find({})).length === 0
           })
@@ -150,6 +183,70 @@ export const handle = async (main: Handler, request: Express.Request, response: 
           const { id } = account
 
           return main.okStatus(200, { id })
+        }
+
+        case 'verify': {
+          const { body: { accountId, method } } = request
+
+          if (
+            (typeof (accountId) !== 'string') ||
+            (typeof (method) !== 'string')
+          ) {
+            return main.errorStatus(400, 'ParametersInvalid')
+          }
+
+          const account = await Account.findOne({ id: accountId })
+          if (account == null) {
+            return main.errorStatus(404, 'AccountNotFound')
+          }
+
+          const email = await Email.findOne({ accountId })
+          if (email == null) {
+            return main.errorStatus(400, 'NoEmailToVerify')
+          }
+
+          switch (method) {
+            case 'google': {
+              const { body: { tokenId, addAsLogin } } = request
+
+              if (
+                (typeof (tokenId) !== 'string') ||
+                ((addAsLogin != null) && (typeof (addAsLogin) !== 'boolean'))
+              ) {
+                return main.errorStatus(400, 'ParametersInvalid')
+              }
+
+              const token = await main.googleAuthClient.getTokenInfo(tokenId)
+
+              if (typeof (token.email) !== 'string') {
+                return main.errorStatus(400, 'GAuthEmailNotAvailable')
+              } else if (typeof (token.user_id) !== 'string') {
+                return main.errorStatus(400, 'GAuthUserIdNotAvailable')
+              } else if (token.email_verified !== true) {
+                return main.errorStatus(400, 'GAuthEmailNotVerified')
+              } else if (`${email.name}@${email.domain}` !== `${token.email}`.toLowerCase()) {
+                return main.errorStatus(400, 'GAuthEmailMismatch')
+              }
+
+              if (addAsLogin === true) {
+                const login = new Login({
+                  createTime: Date.now(),
+                  id: await RandomEssentials.randomHex(idLength, { checker: async (id) => await Login.exists({ id }) != null }),
+                  accountId,
+                  loginType: LoginType.Google,
+                  signature: token.user_id
+                })
+
+                await login.save()
+              }
+
+              email.verified = true
+              await email.save()
+              return main.okStatus(200)
+            }
+
+            default: return main.errorStatus(400, 'ParametersInvalid')
+          }
         }
 
         default: return main.errorStatus(400, 'RequestInvalid')

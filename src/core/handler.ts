@@ -25,24 +25,27 @@ export enum HandlerCode {
   // System Errors
   Internal,
   NotImplemented,
-
-  // User Errors
   RequestInvalid,
   ParametersInvalid,
+
+  // Session Errors
   RoleInvalid,
   SessionInvalid,
-
-  // User Login Errors
   AuthRequired,
   AuthIncorrect,
   AuthNotAssociated,
-
-  // User Registration Errors
   EmailTaken,
   EmailInvalid,
   UsernameTaken,
   UsernameInvalid,
   PasswordInvalid,
+  NoEmailToVerify,
+  GAuthEmailNotAvailable,
+  GAuthUserIdNotAvailable,
+  GAuthEmailNotVerified,
+  GAuthEmailMismatch,
+
+  // Account Errors
   AccountNotFound
 }
 

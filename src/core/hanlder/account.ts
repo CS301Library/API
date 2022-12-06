@@ -18,7 +18,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
       return main.errorStatus(403, 'RoleInvalid')
     }
 
-    const [{ query: { offset, username, name, isAdmin, email: emailAddress } }, { resources: { Email } }] = [request, main]
+    const [{ query: { offset, username, name, givenName, middleName, familyName, isAdmin, email: emailAddress } }, { resources: { Email } }] = [request, main]
     const start = ((offset: number) => Number.isNaN(offset) ? 0 : offset)(offset != null ? Number(offset) : Number.NaN)
     const list: any[] = []
 
@@ -27,7 +27,6 @@ export const handle = async (main: Handler, request: Express.Request, response: 
       if (start >= i) {
         if (
           ((typeof (username) === 'string') && (!account.username.toLowerCase().includes(username.toLowerCase()))) ||
-          ((typeof (name) === 'string') && (!account.name.toLowerCase().includes(name.toLowerCase()))) ||
           ((typeof (isAdmin) === 'boolean') && (account.isAdmin !== isAdmin))
         ) {
           continue
@@ -39,6 +38,20 @@ export const handle = async (main: Handler, request: Express.Request, response: 
           } else if (!`${email.name}@${email.domain}`.includes(emailAddress.toLowerCase())) {
             continue
           }
+        }
+
+        if (typeof (name) === 'string') {
+          const fullName = `${account.givenName}${account.middleName != null ? ` ${account.middleName}` : ''} ${account.familyName}`
+
+          if (!fullName.toLowerCase().includes(name.toLowerCase())) {
+            continue
+          }
+        } else if (
+          ((typeof (givenName) === 'string') && (!account.givenName.toLowerCase().includes(givenName.toLowerCase()))) ||
+          ((typeof (middleName) === 'string') && (account.middleName != null) && (!account.middleName.toLowerCase().includes(middleName.toLowerCase()))) ||
+          ((typeof (familyName) === 'string') && (!account.familyName.toLowerCase().includes(familyName.toLowerCase())))
+        ) {
+          continue
         }
 
         if (list.length >= paginatedSizeLimit) {
@@ -74,13 +87,29 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         return main.errorStatus(403, 'RoleInvalid')
       }
 
-      const { body: { name } } = request
-      if (name != null) {
-        if (typeof (name) !== 'string') {
+      const { body: { givenName, middleName, familyName } } = request
+      if (givenName != null) {
+        if (typeof (givenName) !== 'string') {
           return main.errorStatus(400, 'ParametersInvalid')
         }
 
-        account.name = name
+        account.givenName = givenName
+      }
+
+      if ('middleName' in request) {
+        if ((middleName != null) && (typeof (middleName) !== 'string')) {
+          return main.errorStatus(400, 'ParametersInvalid')
+        }
+
+        account.middleName = middleName ?? null
+      }
+
+      if (familyName != null) {
+        if (typeof (familyName) !== 'string') {
+          return main.errorStatus(400, 'ParametersInvalid')
+        }
+
+        account.familyName = familyName
       }
 
       await account.save()
