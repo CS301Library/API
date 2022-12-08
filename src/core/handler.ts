@@ -46,7 +46,10 @@ export enum HandlerCode {
   GAuthEmailMismatch,
 
   // Account Errors
-  AccountNotFound
+  AccountNotFound,
+
+  // Book Errors
+  BookNotFound
 }
 
 export class Handler {
@@ -188,8 +191,9 @@ export class Handler {
     }
 
     switch (pathArray[0] ?? '') {
-      case 'auth': return await (await import('./hanlder/auth')).handle(this, request, response)
-      case 'account': return await (await import('./hanlder/account')).handle(this, request, response)
+      case 'auth': return await (await import('./handler/auth')).handle(this, request, response)
+      case 'account': return await (await import('./handler/account')).handle(this, request, response)
+      case 'book': return await (await import('./handler/book')).handle(this, request, response)
 
       case '': return this.okStatus(200, { message: 'Welcome.' })
       default: return this.errorStatus(400, 'RequestInvalid')

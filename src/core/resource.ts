@@ -41,6 +41,14 @@ export interface Session extends BaseResource {
   accountId: string
 }
 
+export interface Book extends BaseResource {
+  title: string
+  author: string
+  releaseTime: number
+  synopsis?: string
+  background?: string
+}
+
 export class ResourceManager {
   public constructor (server: Server) {
     this.server = server
@@ -85,6 +93,16 @@ export class ResourceManager {
 
       accountId: { type: Mongoose.SchemaTypes.String, required: true }
     }))
+
+    this.Book = mongoose.model<Book>('Book', new mongoose.Schema({
+      ...baseSchema,
+
+      title: { type: Mongoose.SchemaTypes.String, required: true },
+      author: { type: Mongoose.SchemaTypes.String, required: true },
+      releaseTime: { type: Mongoose.SchemaTypes.Number, required: true },
+      synopsis: { type: Mongoose.SchemaTypes.String, required: false },
+      background: { type: Mongoose.SchemaTypes.String, required: false }
+    }))
   }
 
   public readonly server: Server
@@ -94,4 +112,5 @@ export class ResourceManager {
   public readonly Email: Mongoose.Model<Email>
   public readonly Login: Mongoose.Model<Login>
   public readonly Session: Mongoose.Model<Session>
+  public readonly Book: Mongoose.Model<Book>
 }
