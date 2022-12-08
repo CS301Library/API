@@ -25,7 +25,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
     case 'GET': {
       const bookId = pathArray[1]
       if (bookId == null) {
-        const { body: { offset, title, author, releaseTime, releaseTimeStart, releaseTimeStop, synopsis, background } } = request
+        const { body: { offset, title, author, publishTime, publishTimeStart, publishTimeStop, synopsis, background } } = request
 
         const start = ((offset: number) => Number.isNaN(offset) ? 0 : offset)(offset != null ? Number(offset) : Number.NaN)
         const list: Array<{
@@ -91,12 +91,12 @@ export const handle = async (main: Handler, request: Express.Request, response: 
             }
           }
 
-          if ((typeof (releaseTime) === 'number') && (book.releaseTime != null)) {
+          if ((typeof (publishTime) === 'number') && (book.publishTime != null)) {
             continue
           } else {
             if (
-              ((typeof (releaseTimeStart) === 'number') && (book.releaseTime < releaseTimeStart)) ||
-              ((typeof (releaseTimeStop) === 'number') && (book.releaseTime > releaseTimeStop))
+              ((typeof (publishTimeStart) === 'number') && (book.publishTime < publishTimeStart)) ||
+              ((typeof (publishTimeStop) === 'number') && (book.publishTime > publishTimeStop))
             ) {
               continue
             }

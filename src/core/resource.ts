@@ -44,7 +44,7 @@ export interface Session extends BaseResource {
 export interface Book extends BaseResource {
   title: string
   author: string
-  releaseTime: number
+  publishTime: number
   synopsis?: string
   background?: string
 }
@@ -99,7 +99,7 @@ export class ResourceManager {
 
       title: { type: Mongoose.SchemaTypes.String, required: true },
       author: { type: Mongoose.SchemaTypes.String, required: true },
-      releaseTime: { type: Mongoose.SchemaTypes.Number, required: true },
+      publishTime: { type: Mongoose.SchemaTypes.Number, required: true },
       synopsis: { type: Mongoose.SchemaTypes.String, required: false },
       background: { type: Mongoose.SchemaTypes.String, required: false }
     }))
