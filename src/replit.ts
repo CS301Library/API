@@ -6,7 +6,8 @@ const run = async (): Promise<void> => {
   const server = new Server({
     host: process.env.host as string,
     username: process.env.username as string,
-    password: process.env.password as string
+    password: process.env.password as string,
+    dbName: process.env.db_name as string
   })
 
   await server.startup()
