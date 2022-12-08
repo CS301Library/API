@@ -1,3 +1,4 @@
 /dist
 /node_modules
-db-creds.json
+/db-creds.json
+/package-lock.json
