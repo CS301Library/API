@@ -157,7 +157,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
             id: await RandomEssentials.randomHex(idLength, { checker: async (id) => await Account.exists({ id }) == null }),
             createTime: Date.now(),
             givenName,
-            middleName,
+            middleName: (middleName?.length ?? 0) > 0 ? middleName : null,
             familyName,
             username: username.toLowerCase(),
             isAdmin: (await Account.find({})).length === 0

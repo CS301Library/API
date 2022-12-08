@@ -3,7 +3,7 @@ import Express from 'express'
 import { Handler, HandlerReturn } from '../handler'
 import { Account, ResourceDocument } from '../resource'
 
-export const handle = async (main: Handler, request: Express.Request, response: Express. Response): Promise<HandlerReturn> => {
+export const handle = async (main: Handler, request: Express.Request, response: Express.Response): Promise<HandlerReturn> => {
   const [{ auth, pathArray }, { resources: { Account }, server: { options: { paginatedSizeLimit } } }] = [request, main]
 
   if (auth == null) {
@@ -22,44 +22,38 @@ export const handle = async (main: Handler, request: Express.Request, response: 
     const start = ((offset: number) => Number.isNaN(offset) ? 0 : offset)(offset != null ? Number(offset) : Number.NaN)
     const list: any[] = []
 
-    let i = 0
-    for await (const account of Account.find({})) {
-      if (start >= i) {
-        if (
-          ((typeof (username) === 'string') && (!account.username.toLowerCase().includes(username.toLowerCase()))) ||
-          ((typeof (isAdmin) === 'boolean') && (account.isAdmin !== isAdmin))
-        ) {
+    for await (const account of Account.find({}, {}, { skip: start })) {
+      if (
+        ((typeof (username) === 'string') && (!account.username.toLowerCase().includes(username.toLowerCase()))) ||
+        ((typeof (isAdmin) === 'boolean') && (account.isAdmin !== isAdmin))
+      ) {
+        continue
+      } else if (typeof (emailAddress) === 'string') {
+        const email = await Email.findOne({ accountId: account.id })
+
+        if (email == null) {
           continue
-        } else if (typeof (emailAddress) === 'string') {
-          const email = await Email.findOne({ accountId: account.id })
-
-          if (email == null) {
-            continue
-          } else if (!`${email.name}@${email.domain}`.includes(emailAddress.toLowerCase())) {
-            continue
-          }
-        }
-
-        if (typeof (name) === 'string') {
-          const fullName = `${account.givenName}${account.middleName != null ? ` ${account.middleName}` : ''} ${account.familyName}`
-
-          if (!fullName.toLowerCase().includes(name.toLowerCase())) {
-            continue
-          }
-        } else if (
-          ((typeof (givenName) === 'string') && (!account.givenName.toLowerCase().includes(givenName.toLowerCase()))) ||
-          ((typeof (middleName) === 'string') && (account.middleName != null) && (!account.middleName.toLowerCase().includes(middleName.toLowerCase()))) ||
-          ((typeof (familyName) === 'string') && (!account.familyName.toLowerCase().includes(familyName.toLowerCase())))
-        ) {
+        } else if (!`${email.name}@${email.domain}`.includes(emailAddress.toLowerCase())) {
           continue
         }
+      } else if (typeof (name) === 'string') {
+        const fullName = `${account.givenName}${account.middleName != null ? ` ${account.middleName}` : ''} ${account.familyName}`
 
-        if (list.length >= paginatedSizeLimit) {
-          break
+        if (!fullName.toLowerCase().includes(name.toLowerCase())) {
+          continue
         }
+      } else if (
+        ((typeof (givenName) === 'string') && (!account.givenName.toLowerCase().includes(givenName.toLowerCase()))) ||
+        ((typeof (middleName) === 'string') && (account.middleName != null) && (!account.middleName.toLowerCase().includes(middleName.toLowerCase()))) ||
+        ((typeof (familyName) === 'string') && (!account.familyName.toLowerCase().includes(familyName.toLowerCase())))
+      ) {
+        continue
       }
 
-      i++
+      list.push(main.leanObject(account))
+      if (list.length >= paginatedSizeLimit) {
+        break
+      }
     }
 
     return main.okStatus(200, list)
