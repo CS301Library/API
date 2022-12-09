@@ -1,8 +1,9 @@
+import RandomEssentials from '@rizzzi/random-essentials'
 import Express from 'express'
 import Fuse from 'fuse.js'
 
 import { Handler, HandlerReturn } from '../handler'
-import { Book } from '../resource'
+import { Book, ResourceDocument } from '../resource'
 
 export const indexMap: WeakMap<Handler, Index> = new WeakMap([])
 export const getIndex = (main: Handler): Index => {
@@ -95,7 +96,7 @@ export class Index {
 
 export const handle = async (main: Handler, request: Express.Request, response: Express.Response): Promise<HandlerReturn> => {
   const { pathArray, auth, method } = request
-  const { resources: { Book }, server: { options: { paginatedSizeLimit } } } = main
+  const { resources: { Book }, server: { options: { paginatedSizeLimit, idLength } } } = main
 
   if (auth == null) {
     return main.errorStatus(401, 'AuthRequired')
@@ -104,6 +105,52 @@ export const handle = async (main: Handler, request: Express.Request, response: 
   }
 
   switch (method) {
+    case 'PUT':
+    case 'POST': {
+      const { body: { title, author, publishTime, synopsis, background } } = request
+      if (
+        (typeof (title) !== 'string') ||
+        (typeof (author) !== 'string') ||
+        (typeof (publishTime) !== 'number') ||
+        ((synopsis != null) && (typeof (synopsis) !== 'string')) ||
+        ((background != null) && (typeof (synopsis) !== 'string'))
+      ) {
+        return main.errorStatus(400, 'ParametersInvalid')
+      }
+
+      let book: ResourceDocument<Book> | null
+      if (method === 'PUT') {
+        book = new Book({
+          id: await RandomEssentials.randomHex(idLength, { checker: async (id) => await Book.exists({ id }) != null }),
+          createTime: Date.now(),
+          title,
+          author,
+          publishTime,
+          synopsis,
+          background
+        })
+      } else {
+        const bookId = pathArray[1]
+        if (typeof (bookId) !== 'string') {
+          return main.errorStatus(400, 'ParametersInvalid')
+        }
+
+        book = await Book.findOne({ id: bookId })
+        if (book == null) {
+          return main.errorStatus(404, 'BookNotFound')
+        }
+
+        book.title = title
+        book.author = author
+        book.publishTime = publishTime
+        book.synopsis = synopsis
+        book.background = background
+      }
+
+      await book.save()
+      return main.okStatus(200, book.id)
+    }
+
     case 'GET': {
       const bookId = pathArray[1]
       if (bookId == null) {
