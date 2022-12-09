@@ -18,24 +18,28 @@ export class Index {
     this.main = main
     this.items = []
     this.indexed = false
-    this._indexRunning = false
+    this._nextIndex = 0
+    this._indexing = false
   }
 
   public readonly main: Handler
   public items: Book[]
   public indexed: boolean
 
-  private _indexRunning: boolean
-  public async startIndexing (): Promise<void> {
-    if (this._indexRunning) {
+  private _nextIndex: number
+  private _indexing: boolean
+  public async index (): Promise<void> {
+    if (this._indexing) {
       while (!this.indexed) {
         await new Promise<void>((resolve) => setTimeout(resolve, 1000))
       }
 
       return
+    } else if (this._nextIndex > Date.now()) {
+      return
     }
 
-    this._indexRunning = true
+    this._indexing = true
     try {
       const { main: { resources: { Book } } } = this
       const items = []
@@ -47,20 +51,14 @@ export class Index {
       this.items = items
       this.indexed = true
     } finally {
-      this._indexRunning = false
+      this._nextIndex = Date.now() + 1000 * 60 * 60 * 24
+      this._indexing = false
     }
   }
 
-  // public async start (): Promise<void> {
-  //   while (true) {
-  //     await this.startIndexing()
-  //     await new Promise<void>((resolve) => setTimeout(resolve, 1000 * 60 * 60 * 24))
-  //   }
-  // }
-
   public async search (search: string): Promise<Book[]> {
     if (!this.indexed) {
-      await this.startIndexing()
+      await this.index()
     }
 
     const result = new Fuse(this.items, {
