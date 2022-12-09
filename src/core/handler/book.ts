@@ -67,7 +67,7 @@ export class Index {
       const items = []
 
       for await (const book of Book.find({})) {
-        items.push(this.main.leanObject(book))
+        items.push(book)
       }
 
       this.fuse.setCollection(items)
