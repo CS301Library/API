@@ -121,7 +121,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
       let book: ResourceDocument<Book> | null
       if (method === 'PUT') {
         book = new Book({
-          id: await RandomEssentials.randomHex(idLength, { checker: async (id) => await Book.exists({ id }) != null }),
+          id: await RandomEssentials.randomHex(idLength, { checker: async (id) => await Book.exists({ id }) == null }),
           createTime: Date.now(),
           title,
           author,
