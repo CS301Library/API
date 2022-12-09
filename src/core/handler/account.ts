@@ -22,10 +22,11 @@ export const handle = async (main: Handler, request: Express.Request, response: 
     const start = ((offset: number) => Number.isNaN(offset) ? 0 : offset)(offset != null ? Number(offset) : Number.NaN)
     const list: any[] = []
 
-    for await (const account of Account.find({}, {}, { skip: start })) {
+    let count = 0
+    for await (const account of Account.find({})) {
       if (
         ((typeof (username) === 'string') && (!account.username.toLowerCase().includes(username.toLowerCase()))) ||
-        ((typeof (isAdmin) === 'boolean') && (account.isAdmin !== isAdmin))
+        ((typeof (isAdmin) === 'string') && (account.isAdmin !== (isAdmin === 'true')))
       ) {
         continue
       } else if (typeof (emailAddress) === 'string') {
@@ -50,10 +51,13 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         continue
       }
 
-      list.push(main.leanObject(account))
+      if (start <= count) {
+        list.push(main.leanObject(account))
+      }
       if (list.length >= paginatedSizeLimit) {
         break
       }
+      count++
     }
 
     return main.okStatus(200, list)

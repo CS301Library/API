@@ -2,13 +2,81 @@ import Express from 'express'
 import Fuse from 'fuse.js'
 
 import { Handler, HandlerReturn } from '../handler'
+import { Book } from '../resource'
 
-export const search = (text: string, searchText: string): Fuse.FuseResult<{ text: string }> | undefined => {
-  return new Fuse([{ text }], {
-    keys: ['text'],
-    includeMatches: true,
-    includeScore: true
-  }).search(searchText)[0]
+export const indexMap: WeakMap<Handler, Index> = new WeakMap([])
+export const getIndex = (main: Handler): Index => {
+  return indexMap.get(main) ?? ((map) => {
+    indexMap.set(main, map)
+
+    return map
+  })(new Index(main))
+}
+
+export class Index {
+  public constructor (main: Handler) {
+    this.main = main
+    this.items = []
+    this.indexed = false
+    this._indexRunning = false
+  }
+
+  public readonly main: Handler
+  public items: Book[]
+  public indexed: boolean
+
+  private _indexRunning: boolean
+  public async startIndexing (): Promise<void> {
+    if (this._indexRunning) {
+      while (!this.indexed) {
+        await new Promise<void>((resolve) => setTimeout(resolve, 1000))
+      }
+
+      return
+    }
+
+    this._indexRunning = true
+    try {
+      const { main: { resources: { Book } } } = this
+      const items = []
+
+      for await (const book of Book.find({})) {
+        items.push(this.main.leanObject(book))
+      }
+
+      this.items = items
+      this.indexed = true
+    } finally {
+      this._indexRunning = false
+    }
+  }
+
+  // public async start (): Promise<void> {
+  //   while (true) {
+  //     await this.startIndexing()
+  //     await new Promise<void>((resolve) => setTimeout(resolve, 1000 * 60 * 60 * 24))
+  //   }
+  // }
+
+  public async search (search: string): Promise<Book[]> {
+    if (!this.indexed) {
+      await this.startIndexing()
+    }
+
+    const result = new Fuse(this.items, {
+      includeMatches: true,
+      includeScore: true,
+      keys: ['title', 'author', 'synopsis', 'background']
+    }).search(search)
+
+    return result.map((e) => e.item)
+  }
+
+  public async * searchIter (search: string): AsyncGenerator<Book> {
+    for (const book of await this.search(search)) {
+      yield book
+    }
+  }
 }
 
 export const handle = async (main: Handler, request: Express.Request, response: Express.Response): Promise<HandlerReturn> => {
@@ -25,90 +93,54 @@ export const handle = async (main: Handler, request: Express.Request, response: 
     case 'GET': {
       const bookId = pathArray[1]
       if (bookId == null) {
-        const { body: { offset, title, author, publishTime, publishTimeStart, publishTimeStop, synopsis, background } } = request
+        const { query: { offset, searchString, publishTime: publishTimeStr, publishTimeStart: publishTimeStartStr, publishTimeStop: publishTimeStopStr } } = request
 
         const start = ((offset: number) => Number.isNaN(offset) ? 0 : offset)(offset != null ? Number(offset) : Number.NaN)
-        const list: Array<{
-          item: any
-          score: number
-        }> = []
+        const list: Book[] = []
 
-        for await (const book of Book.find({}, {}, { skip: start })) {
-          let tier = 0
-          let score = 0
+        if ((searchString != null) && (typeof (searchString) !== 'string')) {
+          return main.errorStatus(400, 'ParametersInvalid')
+        }
 
-          if (typeof (title) === 'string') {
-            if (book.title.toLowerCase().includes(title.toLowerCase())) {
-              tier = 0
-              score = 1
-            } else {
-              const result = search(book.title, title)
-              if (result == null) {
-                continue
-              }
+        let publishTime: number | undefined
+        let publishTimeStart: number | undefined
+        let publishTimeStop: number | undefined
 
-              tier = 3
-              score = result.score as number
-            }
-          } else if (typeof (author) === 'string') {
-            if (book.author.toLowerCase().includes(author.toLowerCase())) {
-              tier = 2
-              score = 1
-            } else {
-              const result = search(book.author, author)
-              if (result == null) {
-                continue
-              }
-
-              tier = 4
-              score = result.score as number
-            }
-          } else if ((typeof (synopsis) === 'string') && (book.synopsis != null)) {
-            if (book.synopsis.toLowerCase().includes(synopsis.toLowerCase())) {
-              tier = 5
-              score = 1
-            } else {
-              const result = search(book.synopsis, synopsis)
-              if (result == null) {
-                continue
-              }
-
-              tier = 6
-              score = result.score as number
-            }
-          } else if ((typeof (background) === 'string') && (book.background != null)) {
-            if (book.background.toLowerCase().includes(background.toLowerCase())) {
-              tier = 7
-              score = 1
-            } else {
-              const result = search(book.background, background)
-              if (result == null) {
-                continue
-              }
-
-              tier = 8
-              score = result.score as number
-            }
+        if ((publishTimeStr != null) && (Number.isNaN(publishTime = Number(publishTimeStr)))) {
+          publishTime = undefined
+        } else {
+          if ((publishTimeStartStr != null) && (Number.isNaN(publishTimeStart = Number(publishTimeStartStr)))) {
+            publishTimeStart = undefined
           }
 
-          if ((typeof (publishTime) === 'number') && (book.publishTime != null)) {
-            continue
-          } else {
-            if (
-              ((typeof (publishTimeStart) === 'number') && (book.publishTime < publishTimeStart)) ||
-              ((typeof (publishTimeStop) === 'number') && (book.publishTime > publishTimeStop))
-            ) {
-              continue
-            }
-          }
-
-          list.push({ item: main.leanObject(book), score: score + tier })
-          if (list.length >= paginatedSizeLimit) {
-            break
+          if ((publishTimeStopStr != null) && (Number.isNaN(publishTimeStop = Number(publishTimeStopStr)))) {
+            publishTimeStop = undefined
           }
         }
 
-        return main.okStatus(200, list.sort((a, b) => a.score - b.score))
+        let count = 0
+        for await (const book of searchString != null ? getIndex(main).searchIter(searchString) : Book.find({})) {
+          if (publishTime != null) {
+            if (publishTime !== book.publishTime) {
+              continue
+            }
+          } else if (
+            ((publishTimeStart != null) && (publishTimeStart > book.publishTime)) ||
+            ((publishTimeStop != null) && (publishTimeStop < book.publishTime))
+          ) {
+            continue
+          }
+
+          if (start <= count) {
+            list.push(main.leanObject(book as any))
+          }
+          if (list.length > paginatedSizeLimit) {
+            break
+          }
+          count++
+        }
+
+        return main.okStatus(200, list)
       }
 
       const book = await Book.findOne({ id: bookId })

@@ -165,11 +165,11 @@ export class Handler {
     return [HandlerStatus.Binary, buffer, type]
   }
 
-  public leanObject<T> (doc: ResourceDocument<T>): Omit<T, '_id'> {
-    const object = doc.toJSON() as Omit<T, '_id'>
+  public leanObject<T> (doc: ResourceDocument<T>): T {
+    const object = doc.toJSON() as any
 
-    delete (object as any)._id
-    delete (object as any).__v
+    delete object._id
+    delete object.__v
     return object
   }
 
