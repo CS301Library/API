@@ -16,15 +16,36 @@ export const getIndex = (main: Handler): Index => {
 export class Index {
   public constructor (main: Handler) {
     this.main = main
-    this.items = []
+    this.fuse = new Fuse([], {
+      includeMatches: true,
+      includeScore: true,
+      keys: [
+        {
+          name: 'title',
+          weight: 4
+        },
+        {
+          name: 'author',
+          weight: 3
+        },
+        {
+          name: 'synopsis',
+          weight: 2
+        },
+        {
+          name: 'background',
+          weight: 1
+        }
+      ]
+    })
     this.indexed = false
     this._nextIndex = 0
     this._indexing = false
   }
 
   public readonly main: Handler
-  public items: Book[]
   public indexed: boolean
+  public fuse: Fuse<Book>
 
   private _nextIndex: number
   private _indexing: boolean
@@ -48,7 +69,7 @@ export class Index {
         items.push(this.main.leanObject(book))
       }
 
-      this.items = items
+      this.fuse.setCollection(items)
       this.indexed = true
     } finally {
       this._nextIndex = Date.now() + 1000 * 60 * 60 * 24
@@ -61,12 +82,7 @@ export class Index {
       await this.index()
     }
 
-    const result = new Fuse(this.items, {
-      includeMatches: true,
-      includeScore: true,
-      keys: ['title', 'author', 'synopsis', 'background']
-    }).search(search)
-
+    const result = this.fuse.search(search)
     return result.map((e) => e.item)
   }
 
