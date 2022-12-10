@@ -105,6 +105,21 @@ export const handle = async (main: Handler, request: Express.Request, response: 
   }
 
   switch (method) {
+    case 'DELETE': {
+      const bookId = pathArray[1]
+      if (typeof (bookId) !== 'string') {
+        return main.errorStatus(400, 'ParametersInvalid')
+      }
+
+      const book = await Book.findOne({ id: bookId })
+      if (book == null) {
+        return main.errorStatus(404, 'BookNotFound')
+      }
+
+      await book.delete()
+      return main.okStatus(200)
+    }
+
     case 'PUT': {
       const { body: { title, author, publishTime, synopsis, background } } = request
       if (
