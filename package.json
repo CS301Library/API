@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "update": "rm -rf dist; git pull --rebase; npx tsc"
+    "update": "rm -rf dist; git pull --rebase; npx tsc --build --verbose"
   },
   "author": "rizzzigit",
   "license": "MIT",
