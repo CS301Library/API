@@ -100,13 +100,12 @@ export const handle = async (main: Handler, request: Express.Request, response: 
 
   if (auth == null) {
     return main.errorStatus(401, 'AuthRequired')
-  } else if (['POST', 'PUT', 'DELETE'].includes(method) && (!auth.account.isAdmin)) {
+  } else if (['PUT', 'DELETE'].includes(method) && (!auth.account.isAdmin)) {
     return main.errorStatus(403, 'RoleInvalid')
   }
 
   switch (method) {
-    case 'PUT':
-    case 'POST': {
+    case 'PUT': {
       const { body: { title, author, publishTime, synopsis, background } } = request
       if (
         (typeof (title) !== 'string') ||
@@ -119,7 +118,8 @@ export const handle = async (main: Handler, request: Express.Request, response: 
       }
 
       let book: ResourceDocument<Book> | null
-      if (method === 'PUT') {
+      const bookId = pathArray[1]
+      if (bookId == null) {
         book = new Book({
           id: await RandomEssentials.randomHex(idLength, { checker: async (id) => await Book.exists({ id }) == null }),
           createTime: Date.now(),
@@ -130,7 +130,6 @@ export const handle = async (main: Handler, request: Express.Request, response: 
           background
         })
       } else {
-        const bookId = pathArray[1]
         if (typeof (bookId) !== 'string') {
           return main.errorStatus(400, 'ParametersInvalid')
         }
