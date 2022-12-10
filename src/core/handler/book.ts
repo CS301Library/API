@@ -207,7 +207,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
           }
 
           if (start <= count) {
-            list.push(book.id)
+            list.push(main.leanObject(book as any))
           }
           if (list.length > paginatedSizeLimit) {
             break

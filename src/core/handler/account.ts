@@ -52,7 +52,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
       }
 
       if (start <= count) {
-        list.push(account.id)
+        list.push(main.leanObject(account))
       }
       if (list.length >= paginatedSizeLimit) {
         break
