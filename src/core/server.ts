@@ -108,6 +108,8 @@ export class Server {
       user: databaseCredentials.username,
       pass: databaseCredentials.password
     })
+
+    await this.resources.Session.deleteMany({})
   }
 
   public async shutdown (): Promise<void> {
