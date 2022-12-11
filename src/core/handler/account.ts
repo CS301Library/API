@@ -94,7 +94,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         account.givenName = givenName
       }
 
-      if ('middleName' in request) {
+      if ('middleName' in request.body) {
         if ((middleName != null) && (typeof (middleName) !== 'string')) {
           return main.errorStatus(400, 'ParametersInvalid')
         }
