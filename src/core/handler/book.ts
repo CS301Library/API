@@ -123,8 +123,8 @@ export const handle = async (main: Handler, request: Express.Request, response: 
     case 'PUT': {
       const { body: { title, author, publishTime, synopsis, background } } = request
       if (
-        (typeof (title) !== 'string') ||
-        (typeof (author) !== 'string') ||
+        ((typeof (title) !== 'string') || (title.length === 0)) ||
+        ((typeof (author) !== 'string') || (author.length === 0)) ||
         (typeof (publishTime) !== 'number') ||
         ((synopsis != null) && (typeof (synopsis) !== 'string')) ||
         ((background != null) && (typeof (synopsis) !== 'string'))
@@ -141,8 +141,8 @@ export const handle = async (main: Handler, request: Express.Request, response: 
           title,
           author,
           publishTime,
-          synopsis,
-          background
+          synopsis: (synopsis != null) && (synopsis.length !== 0) ? synopsis : null,
+          background: (background != null) && (background.length !== 0) ? background : null
         })
       } else {
         if (typeof (bookId) !== 'string') {

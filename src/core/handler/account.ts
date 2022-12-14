@@ -87,7 +87,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
 
       const { body: { givenName, middleName, familyName } } = request
       if (givenName != null) {
-        if (typeof (givenName) !== 'string') {
+        if ((typeof (givenName) !== 'string') || (givenName.length === 0)) {
           return main.errorStatus(400, 'ParametersInvalid')
         }
 
@@ -99,11 +99,11 @@ export const handle = async (main: Handler, request: Express.Request, response: 
           return main.errorStatus(400, 'ParametersInvalid')
         }
 
-        account.middleName = middleName ?? null
+        account.middleName = (middleName != null) && (middleName !== '') ? middleName : null
       }
 
       if (familyName != null) {
-        if (typeof (familyName) !== 'string') {
+        if ((typeof (familyName) !== 'string') || (familyName.length === 0)) {
           return main.errorStatus(400, 'ParametersInvalid')
         }
 
