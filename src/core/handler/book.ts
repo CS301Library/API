@@ -168,12 +168,15 @@ export const handle = async (main: Handler, request: Express.Request, response: 
     case 'GET': {
       const bookId = pathArray[1]
       if (bookId == null) {
-        const { query: { offset, searchString, publishTime: publishTimeStr, publishTimeStart: publishTimeStartStr, publishTimeStop: publishTimeStopStr } } = request
+        const { query: { offset, afterId, searchString, publishTime: publishTimeStr, publishTimeStart: publishTimeStartStr, publishTimeStop: publishTimeStopStr } } = request
 
         const start = ((offset: number) => Number.isNaN(offset) ? 0 : offset)(offset != null ? Number(offset) : Number.NaN)
         const list: Book[] = []
 
-        if ((searchString != null) && (typeof (searchString) !== 'string')) {
+        if (
+          ((searchString != null) && (typeof (searchString) !== 'string')) ||
+          ((afterId != null) && (typeof (afterId) !== 'string'))
+        ) {
           return main.errorStatus(400, 'ParametersInvalid')
         }
 
@@ -194,6 +197,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         }
 
         let count = 0
+        let skipId = true
         for await (const book of searchString != null ? getIndex(main).searchIter(searchString) : Book.find({})) {
           if (publishTime != null) {
             if (publishTime !== book.publishTime) {
@@ -203,6 +207,14 @@ export const handle = async (main: Handler, request: Express.Request, response: 
             ((publishTimeStart != null) && (publishTimeStart > book.publishTime)) ||
             ((publishTimeStop != null) && (publishTimeStop < book.publishTime))
           ) {
+            continue
+          }
+
+          if ((afterId != null) && skipId) {
+            if (book.id === afterId) {
+              skipId = false
+            }
+
             continue
           }
 
