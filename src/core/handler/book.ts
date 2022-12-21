@@ -45,7 +45,9 @@ export class Index {
           name: 'background',
           weight: 1
         }
-      ]
+      ],
+      minMatchCharLength: 3,
+      threshold: 0.25
     })
     this.indexed = false
     this._nextIndex = 0
