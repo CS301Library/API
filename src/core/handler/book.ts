@@ -49,6 +49,7 @@ export class Index {
       minMatchCharLength: 3,
       threshold: 0.25
     })
+    this.searchCache = {}
     this.indexed = false
     this._nextIndex = 0
     this._indexing = false
@@ -92,13 +93,22 @@ export class Index {
     }
   }
 
+  public readonly searchCache: { [key: string]: string[] }
+
   public async search (search: string): Promise<string[]> {
     if (!this.indexed) {
       await this.index()
     }
 
+    const { searchCache } = this
+    search = search.toLowerCase()
+
+    if (searchCache[search] != null) {
+      return searchCache[search]
+    }
+
     const result = this.fuse.search(search)
-    return result.map((entry) => entry.item.id)
+    return (searchCache[search.toLowerCase()] = result.map((entry) => entry.item.id))
   }
 
   public async * searchIter (search: string): AsyncGenerator<string> {
