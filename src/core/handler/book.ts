@@ -5,6 +5,14 @@ import Fuse from 'fuse.js'
 import { Handler, HandlerReturn } from '../handler'
 import { Book, ResourceDocument } from '../resource'
 
+export interface FuseEntry {
+  id: string
+  title: string
+  author: string
+  synopsis?: string
+  background?: string
+}
+
 export const indexMap: WeakMap<Handler, Index> = new WeakMap([])
 export const getIndex = (main: Handler): Index => {
   return indexMap.get(main) ?? ((map) => {
@@ -46,7 +54,7 @@ export class Index {
 
   public readonly main: Handler
   public indexed: boolean
-  public fuse: Fuse<Book>
+  public fuse: Fuse<FuseEntry>
 
   private _nextIndex: number
   private _indexing: boolean
@@ -70,7 +78,11 @@ export class Index {
         items.push(book)
       }
 
-      this.fuse.setCollection(items)
+      this.fuse.setCollection(items.map((entry): FuseEntry => {
+        const { id, title, author, synopsis, background } = entry
+
+        return { id, title, author, synopsis, background }
+      }))
       this.indexed = true
     } finally {
       this._nextIndex = Date.now() + 1000 * 60 * 60 * 24
@@ -78,16 +90,16 @@ export class Index {
     }
   }
 
-  public async search (search: string): Promise<Book[]> {
+  public async search (search: string): Promise<string[]> {
     if (!this.indexed) {
       await this.index()
     }
 
     const result = this.fuse.search(search)
-    return result.map((e) => e.item)
+    return result.map((entry) => entry.item.id)
   }
 
-  public async * searchIter (search: string): AsyncGenerator<Book> {
+  public async * searchIter (search: string): AsyncGenerator<string> {
     for (const book of await this.search(search)) {
       yield book
     }
@@ -198,7 +210,16 @@ export const handle = async (main: Handler, request: Express.Request, response: 
 
         let count = 0
         let skipId = true
-        for await (const book of searchString != null ? getIndex(main).searchIter(searchString) : Book.find({})) {
+        for await (let book of searchString != null ? getIndex(main).searchIter(searchString) : Book.find({})) {
+          if (typeof (book) === 'string') {
+            const eBook = await Book.findOne({ id: book })
+            if (eBook == null) {
+              continue
+            }
+
+            book = eBook
+          }
+
           if (publishTime != null) {
             if (publishTime !== book.publishTime) {
               continue
