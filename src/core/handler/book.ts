@@ -181,8 +181,8 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         book.title = title
         book.author = author
         book.publishTime = publishTime
-        book.synopsis = synopsis.length !== 0 ? synopsis : null
-        book.background = background.length !== 0 ? background : null
+        book.synopsis = (synopsis != null) && (synopsis.length !== 0) ? synopsis : null
+        book.background = (background != null) && (background.length !== 0) ? background : null
       }
 
       await book.save()
