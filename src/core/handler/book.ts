@@ -141,6 +141,8 @@ export const handle = async (main: Handler, request: Express.Request, response: 
       }
 
       await book.delete()
+      getIndex(main).fuse.remove((entry) => book.id === entry.id)
+
       return main.okStatus(200)
     }
 
@@ -185,7 +187,13 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         book.background = (background != null) && (background.length !== 0) ? background : null
       }
 
+      const index = getIndex(main)
+
+      const fuseBookId = book.id
+      index.fuse.remove((entry) => entry.id === fuseBookId)
       await book.save()
+      index.fuse.add({ id: book.id, title: book.title, author: book.author, synopsis: book.synopsis, background: book.background })
+
       return main.okStatus(200, book.id)
     }
 
