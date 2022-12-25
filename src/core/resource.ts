@@ -101,7 +101,13 @@ export class ResourceManager {
       accountId: { type: Mongoose.SchemaTypes.String, required: true }
     }))
 
-    this.Book = mongoose.model<Book>('Book', new mongoose.Schema({
+    this.Book = mongoose.model<Book>('Book', ((schema) => {
+      schema.index({ title: 'text', synopsis: 'text', background: 'text' }, {
+        name: 'text'
+      })
+
+      return schema
+    })(new mongoose.Schema<Book>({
       ...baseSchema,
 
       title: { type: Mongoose.SchemaTypes.String, required: true },
@@ -109,7 +115,7 @@ export class ResourceManager {
       publishTime: { type: Mongoose.SchemaTypes.Number, required: true },
       synopsis: { type: Mongoose.SchemaTypes.String, required: false },
       background: { type: Mongoose.SchemaTypes.String, required: false }
-    }))
+    })))
 
     this.Stock = mongoose.model<Stock>('Stock', new mongoose.Schema({
       ...baseSchema,
