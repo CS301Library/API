@@ -29,6 +29,6 @@
     "google-auth-library": "^8.6.0",
     "mongoose": "^6.6.5",
     "qrcode": "^1.5.1",
-    "tslib": "^2.4.0"
+    "tslib": "^2.4.1"
   }
 }
