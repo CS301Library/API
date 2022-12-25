@@ -103,7 +103,8 @@ export class ResourceManager {
 
     this.Book = mongoose.model<Book>('Book', ((schema) => {
       schema.index({ title: 'text', synopsis: 'text', background: 'text' }, {
-        name: 'text'
+        name: 'text',
+        default_language: 'none'
       })
 
       return schema
