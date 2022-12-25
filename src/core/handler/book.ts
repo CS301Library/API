@@ -112,6 +112,10 @@ export const handle = async (main: Handler, request: Express.Request, response: 
   const { pathArray, auth, method } = request
   const { resources: { Book }, server: { options: { paginatedSizeLimit, idLength } } } = main
 
+  switch (pathArray[2]) {
+    case 'stock': return await (await import('./book/stock')).handler(main, request, response)
+  }
+
   if (auth == null) {
     return main.errorStatus(401, 'AuthRequired')
   } else if (['PUT', 'DELETE'].includes(method) && (!auth.account.isAdmin)) {

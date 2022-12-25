@@ -49,6 +49,13 @@ export interface Book extends BaseResource {
   background?: string
 }
 
+export interface Stock extends BaseResource {
+  bookId: string
+
+  lost: boolean
+  damaged: boolean
+}
+
 export class ResourceManager {
   public constructor (server: Server) {
     this.server = server
@@ -103,6 +110,14 @@ export class ResourceManager {
       synopsis: { type: Mongoose.SchemaTypes.String, required: false },
       background: { type: Mongoose.SchemaTypes.String, required: false }
     }))
+
+    this.Stock = mongoose.model<Stock>('Stock', new mongoose.Schema({
+      ...baseSchema,
+
+      bookId: { type: Mongoose.SchemaTypes.String, required: true },
+      lost: { type: Mongoose.SchemaTypes.Boolean, required: true },
+      damaged: { type: Mongoose.SchemaTypes.Boolean, required: true }
+    }))
   }
 
   public readonly server: Server
@@ -113,4 +128,5 @@ export class ResourceManager {
   public readonly Login: Mongoose.Model<Login>
   public readonly Session: Mongoose.Model<Session>
   public readonly Book: Mongoose.Model<Book>
+  public readonly Stock: Mongoose.Model<Stock>
 }

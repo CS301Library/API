@@ -49,7 +49,10 @@ export enum HandlerCode {
   AccountNotFound,
 
   // Book Errors
-  BookNotFound
+  BookNotFound,
+
+  // Stock Errors
+  StockNotFound
 }
 
 export class Handler {
