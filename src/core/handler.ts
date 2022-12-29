@@ -51,8 +51,9 @@ export enum HandlerCode {
   // Book Errors
   BookNotFound,
 
-  // Stock Errors
-  StockNotFound
+  // BookItem Errors
+  BookItemNotFound,
+
 }
 
 export class Handler {

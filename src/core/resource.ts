@@ -49,7 +49,7 @@ export interface Book extends BaseResource {
   background?: string
 }
 
-export interface Stock extends BaseResource {
+export interface BookItem extends BaseResource {
   bookId: string
 
   lost: boolean
@@ -118,7 +118,7 @@ export class ResourceManager {
       background: { type: Mongoose.SchemaTypes.String, required: false }
     })))
 
-    this.Stock = mongoose.model<Stock>('Stock', new mongoose.Schema({
+    this.BookItem = mongoose.model<BookItem>('BookItem', new mongoose.Schema({
       ...baseSchema,
 
       bookId: { type: Mongoose.SchemaTypes.String, required: true },
@@ -135,5 +135,5 @@ export class ResourceManager {
   public readonly Login: Mongoose.Model<Login>
   public readonly Session: Mongoose.Model<Session>
   public readonly Book: Mongoose.Model<Book>
-  public readonly Stock: Mongoose.Model<Stock>
+  public readonly BookItem: Mongoose.Model<BookItem>
 }

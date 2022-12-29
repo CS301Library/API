@@ -6,10 +6,10 @@ import { Book, ResourceDocument } from '../resource'
 
 export const handle = async (main: Handler, request: Express.Request, response: Express.Response): Promise<HandlerReturn> => {
   const { pathArray, auth, method } = request
-  const { resources: { Book }, server: { options: { paginatedSizeLimit, idLength } } } = main
+  const { resources: { Book, BookItem }, server: { options: { paginatedSizeLimit, idLength } } } = main
 
   switch (pathArray[2]) {
-    case 'stock': return await (await import('./book/stock')).handler(main, request, response)
+    case 'book-item': return await (await import('./book-item')).handle(main, request, response)
   }
 
   if (auth == null) {
@@ -31,6 +31,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
       }
 
       await book.delete()
+      await BookItem.deleteMany({ bookId: book.id })
       return main.okStatus(200)
     }
 
@@ -142,7 +143,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         }
 
         if (start <= count) {
-          list.push(main.leanObject(book as any))
+          list.push(main.leanObject(book))
         }
         if (list.length >= paginatedSizeLimit) {
           break
