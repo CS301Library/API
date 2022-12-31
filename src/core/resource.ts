@@ -56,6 +56,29 @@ export interface BookItem extends BaseResource {
   damaged: boolean
 }
 
+export interface Borrow extends BaseResource {
+  bookItemId: string
+  accountId: string
+
+  pending: boolean
+  sendInfoId: string
+  returnInfoId?: string
+}
+
+export enum BorrowType {
+  Send, Return
+}
+
+export enum BorrowMethod {
+  OverTheCounter
+}
+
+export interface BorrowInfo extends BaseResource {
+  borrowId: string
+  info: BorrowType
+  method: BorrowMethod
+}
+
 export class ResourceManager {
   public constructor (server: Server) {
     this.server = server
@@ -125,6 +148,24 @@ export class ResourceManager {
       lost: { type: Mongoose.SchemaTypes.Boolean, required: true },
       damaged: { type: Mongoose.SchemaTypes.Boolean, required: true }
     }))
+
+    this.Borrow = mongoose.model<Borrow>('Borrow', new Mongoose.Schema({
+      ...baseSchema,
+
+      bookItemId: { type: Mongoose.SchemaTypes.String, required: true },
+      accountId: { type: Mongoose.SchemaTypes.String, required: true },
+      pending: { type: Mongoose.SchemaTypes.Boolean, required: true },
+      sendInfoId: { type: Mongoose.SchemaTypes.String, required: true },
+      returnInfoId: { type: Mongoose.SchemaTypes.String, required: false }
+    }))
+
+    this.BorrowInfo = mongoose.model<BorrowInfo>('BorrowInfo', new Mongoose.Schema({
+      ...baseSchema,
+
+      borrowId: { type: Mongoose.SchemaTypes.String, required: true },
+      info: { type: Mongoose.SchemaTypes.Number, required: true },
+      method: { type: Mongoose.SchemaTypes.Number, required: true }
+    }))
   }
 
   public readonly server: Server
@@ -136,4 +177,6 @@ export class ResourceManager {
   public readonly Session: Mongoose.Model<Session>
   public readonly Book: Mongoose.Model<Book>
   public readonly BookItem: Mongoose.Model<BookItem>
+  public readonly Borrow: Mongoose.Model<Borrow>
+  public readonly BorrowInfo: Mongoose.Model<BorrowInfo>
 }

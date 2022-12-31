@@ -54,6 +54,11 @@ export enum HandlerCode {
   // BookItem Errors
   BookItemNotFound,
 
+  // Borrow Errors
+  BorrowLimitExceeded,
+  BorrowNotFound,
+  BorrowExists,
+  BorrowNoBookItemAvailable,
 }
 
 export class Handler {
@@ -198,6 +203,7 @@ export class Handler {
       case 'auth': return await (await import('./handler/auth')).handle(this, request, response)
       case 'account': return await (await import('./handler/account')).handle(this, request, response)
       case 'book': return await (await import('./handler/book')).handle(this, request, response)
+      case 'borrow': return await (await import('./handler/borrow')).handle(this, request, response)
 
       case '': return this.okStatus(200, { message: 'Welcome.' })
       default: return this.errorStatus(400, 'RequestInvalid')
