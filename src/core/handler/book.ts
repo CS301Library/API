@@ -8,12 +8,14 @@ export const handle = async (main: Handler, request: Express.Request, response: 
   const { pathArray, auth, method } = request
   const { resources: { Book, BookItem }, server: { options: { paginatedSizeLimit, idLength } } } = main
 
-  switch (pathArray[2]) {
-    case 'book-item': return await (await import('./book-item')).handle(main, request, response)
-  }
-
   if (auth == null) {
     return main.errorStatus(401, 'AuthRequired')
+  } else if (pathArray[2] != null) {
+    switch (pathArray[2]) {
+      case 'book-item': return await (await import('./book-item')).handle(main, request, response)
+
+      default: return main.errorStatus(400, 'RequestInvalid')
+    }
   } else if (['PUT', 'DELETE'].includes(method) && (!auth.account.isAdmin)) {
     return main.errorStatus(403, 'RoleInvalid')
   }
