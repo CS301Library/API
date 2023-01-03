@@ -48,6 +48,9 @@ export enum HandlerCode {
   // Account Errors
   AccountNotFound,
 
+  // Email Errors
+  EmailNotFound,
+
   // Book Errors
   BookNotFound,
 

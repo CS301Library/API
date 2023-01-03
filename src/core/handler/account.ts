@@ -74,8 +74,14 @@ export const handle = async (main: Handler, request: Express.Request, response: 
 
   if (account == null) {
     return main.errorStatus(404, 'AccountNotFound')
-  } else if ((account.id !== auth.account.id) || (!auth.account.isAdmin)) {
+  } else if ((account.id !== auth.account.id) && (!auth.account.isAdmin)) {
     return main.errorStatus(403, 'RoleInvalid')
+  } else if (pathArray[2] != null) {
+    switch (pathArray[2]) {
+      case 'email': return await (await import('./account-email')).handle(main, account, request, response)
+
+      default: return main.errorStatus(400, 'RequestInvalid')
+    }
   }
 
   switch (request.method) {
