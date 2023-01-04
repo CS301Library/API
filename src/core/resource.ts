@@ -59,25 +59,15 @@ export interface BookItem extends BaseResource {
 
 export interface Borrow extends BaseResource {
   bookItemId: string
+  bookId: string
   accountId: string
 
-  pending: boolean
-  sendInfoId: string
-  returnInfoId?: string
+  dueTime: number
+  status: BorrowStatus
 }
 
-export enum BorrowType {
-  Send, Return
-}
-
-export enum BorrowMethod {
-  OverTheCounter
-}
-
-export interface BorrowInfo extends BaseResource {
-  borrowId: string
-  info: BorrowType
-  method: BorrowMethod
+export enum BorrowStatus {
+  Pending, Borrowed, Returned
 }
 
 export class ResourceManager {
@@ -156,18 +146,10 @@ export class ResourceManager {
       ...baseSchema,
 
       bookItemId: { type: Mongoose.SchemaTypes.String, required: true },
+      bookId: { type: Mongoose.SchemaTypes.String, required: true },
       accountId: { type: Mongoose.SchemaTypes.String, required: true },
-      pending: { type: Mongoose.SchemaTypes.Boolean, required: true },
-      sendInfoId: { type: Mongoose.SchemaTypes.String, required: true },
-      returnInfoId: { type: Mongoose.SchemaTypes.String, required: false }
-    }))
-
-    this.BorrowInfo = mongoose.model<BorrowInfo>('BorrowInfo', new Mongoose.Schema({
-      ...baseSchema,
-
-      borrowId: { type: Mongoose.SchemaTypes.String, required: true },
-      info: { type: Mongoose.SchemaTypes.Number, required: true },
-      method: { type: Mongoose.SchemaTypes.Number, required: true }
+      dueTime: { type: Mongoose.SchemaTypes.Number, required: true },
+      status: { type: Mongoose.SchemaTypes.Number, required: true }
     }))
   }
 
@@ -181,5 +163,4 @@ export class ResourceManager {
   public readonly Book: Mongoose.Model<Book>
   public readonly BookItem: Mongoose.Model<BookItem>
   public readonly Borrow: Mongoose.Model<Borrow>
-  public readonly BorrowInfo: Mongoose.Model<BorrowInfo>
 }

@@ -2,16 +2,16 @@ import RandomEssentials from '@rizzzi/random-essentials'
 import Express from 'express'
 
 import { Handler, HandlerReturn } from '../handler'
-import { BookItem, Borrow, ResourceDocument } from '../resource'
+import { BookItem, Borrow, BorrowStatus, ResourceDocument } from '../resource'
 
 export const handle = async (main: Handler, request: Express.Request, response: Express.Response): Promise<HandlerReturn> => {
-  const { pathArray, auth, method } = request
-  const { resources: { Book, BookItem, Borrow, BorrowInfo }, server: { options: { idLength } } } = main
+  const { auth, method, pathArray } = request
+  const { resources: { Borrow, Book, Account, BookItem }, server: { options: { idLength } } } = main
 
   if (auth == null) {
-    return main.errorStatus(401, 'AuthRequired')
-  } else if (!['POST', 'GET'].includes(method)) {
-    return main.errorStatus(405, 'RequestInvalid')
+    return main.errorStatus(400, 'AuthRequired')
+  } else if (['PATCH'].includes(method) && (!auth.account.isAdmin)) {
+    return main.errorStatus(403, 'RoleInvalid')
   }
 
   switch (method) {
@@ -21,90 +21,118 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         const borrow = await Borrow.findOne({ id: borrowId })
         if (borrow == null) {
           return main.errorStatus(404, 'BorrowNotFound')
-        } else if ((borrow.accountId !== auth.account.id) && (!auth.account.isAdmin)) {
-          return main.errorStatus(400, 'RoleInvalid')
+        } else if ((auth.account.id !== borrow.accountId) && (auth.account.isAdmin)) {
+          return main.errorStatus(403, 'RoleInvalid')
         }
 
         return main.okStatus(200, main.leanObject(borrow))
       }
 
-      const { query: { pending: pendingStr } } = request
-      const pending = pendingStr === 'true' ? true : pendingStr === 'false' ? false : undefined
+      const { query: { accountId } } = request
       const list: Borrow[] = []
-      for await (const borrow of Borrow.find({ returnInfoId: null, ...auth.account.isAdmin ? { accountId: auth.account.id } : {} })) {
-        if ((pending != null) || (pending !== borrow.pending)) {
-          continue
+      for await (const borrow of Borrow.find(auth.account.isAdmin ? { ...(accountId != null ? { accountId } : {}) } : { accountId: auth.account.id })) {
+        if (borrow.status !== BorrowStatus.Returned) {
+          list.push(main.leanObject(borrow))
         }
-
-        list.push(main.leanObject(borrow))
       }
 
       return main.okStatus(200, list)
     }
 
-    case 'POST': {
-      switch (pathArray[3]) {
-        case 'borrow': {
-          const { body: { bookId } } = request
-          const pendingBorrows = await Borrow.find({ returnInfoId: null, pending: false, accountId: auth.account.id })
+    case 'PATCH': {
+      const borrowId = pathArray[1]
+      if (borrowId == null) {
+        return main.errorStatus(400, 'ParametersInvalid')
+      }
 
-          if (pendingBorrows.length >= 3) {
-            return main.errorStatus(400, 'BorrowLimitExceeded')
-          }
+      const borrow = await Borrow.findOne({ id: borrowId })
+      if (borrow == null) {
+        return main.errorStatus(404, 'BorrowNotFound')
+      }
 
-          for (const pendingBorrow of pendingBorrows) {
-            if ((await BookItem.findOne({ id: pendingBorrow.bookItemId }))?.bookId === bookId) {
-              return main.errorStatus(400, 'BorrowExists')
-            }
-          }
+      const { body: { status } } = request
+      if ((status != null) && ((typeof (status) !== 'number') || (BorrowStatus[status]) == null)) {
+        return main.errorStatus(400, 'ParametersInvalid')
+      }
 
-          const book = await Book.findOne({ id: bookId })
-          if (book == null) {
-            return main.errorStatus(404, 'BookNotFound')
-          }
+      if (status != null) {
+        borrow.status = status
+      }
 
-          const bookItems: Array<ResourceDocument<BookItem>> = []
-          for await (const bookItem of BookItem.findOne({ bookId, lost: false })) {
-            const pendingBookItemBorrow = await Borrow.find({ returnInfoId: null, pending: false, bookItemId: bookItem.id })
+      await borrow.save()
+      return main.okStatus(200)
+    }
 
-            if (pendingBookItemBorrow.length === 0) {
-              bookItems.push(bookItem)
-            }
-          }
+    case 'PUT': {
+      const { body: { accountId, bookId, dayDuration } } = request
+      if (
+        (typeof (accountId) !== 'string') ||
+        (typeof (bookId) !== 'string') ||
+        (typeof (dayDuration) !== 'number')
+      ) {
+        return main.errorStatus(400, 'ParametersInvalid')
+      }
 
-          if (bookItems.length === 0) {
-            return main.errorStatus(400, 'BorrowNoBookItemAvailable')
-          }
+      const account = await Account.findOne({ id: accountId })
+      if (account == null) {
+        return main.errorStatus(404, 'AccountNotFound')
+      } else if ((accountId !== auth.account.id) && (!auth.account.isAdmin)) {
+        return main.errorStatus(403, 'RoleInvalid')
+      }
+      const book = await Book.findOne({ id: bookId })
+      if (book == null) {
+        return main.errorStatus(404, 'BookNotFound')
+      } else if ((dayDuration > 7) || (dayDuration < 1)) {
+        return main.errorStatus(400, 'BorrowDueTimeLimit')
+      }
 
-          const borrowId = await RandomEssentials.randomHex(idLength, { checker: async (id) => await Borrow.exists({ id }) == null })
-          const borrowSendInfoId = await RandomEssentials.randomHex(idLength, { checker: async (id) => await BorrowInfo.exists({ id }) == null })
-          const sendInfo = new Borrow({
-            id: borrowSendInfoId,
-            createTime: Date.now(),
-            borrowId
-          })
+      const borrows = await Borrow.find({ accountId: account.id })
+      if (borrows.length >= 5) {
+        return main.errorStatus(400, 'BorrowLimit')
+      }
 
-          const borrow = new Borrow({
-            id: borrowId,
-            createTime: Date.now(),
-            bookItemId: bookItems.find((bookItem) => !bookItem.damaged) ?? bookItems[0],
-            accountId: auth.account.id,
-            pending: true,
-            sendInfoId: borrowSendInfoId
-          })
+      for (const borrow of borrows) {
+        if (borrow.bookId === book.id) {
+          return main.errorStatus(400, 'BookAlreadyBorrowed')
+        }
+      }
 
-          await borrow.save()
-          await sendInfo.save()
-
-          return main.okStatus(200)
+      const bookItems: Array<ResourceDocument<BookItem>> = []
+      for await (const bookItem of BookItem.find({ bookId })) {
+        if (bookItem.lost) {
+          continue
         }
 
-        // case 'accept-borrow': {
-        //   const {} = request
-        // }
+        let available = true
 
-        default: return main.errorStatus(400, 'RequestInvalid')
+        for await (const borrow of Borrow.find({ bookItemId: bookItem.id })) {
+          if (borrow.status === BorrowStatus.Borrowed) {
+            available = false
+            break
+          }
+        }
+
+        if (available) {
+          bookItems.push(bookItem)
+        }
       }
+
+      if (bookItems.length < 1) {
+        return main.errorStatus(404, 'BorrowNoBookItemAvailable')
+      }
+
+      const borrow = new Borrow({
+        id: await RandomEssentials.randomHex(idLength, { checker: async (id) => await Borrow.exists({ id }) == null }),
+        createTime: Date.now(),
+        accountId,
+        bookId,
+        bookItemId: bookItems[0].id,
+        dueTime: Date.now() + (1000 * 60 * 60 * 24 * dayDuration),
+        status: BorrowStatus.Pending
+      })
+
+      await borrow.save()
+      return main.okStatus(200, borrow.id)
     }
 
     default: return main.errorStatus(405, 'RequestInvalid')

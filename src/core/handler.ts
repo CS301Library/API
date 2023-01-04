@@ -58,10 +58,11 @@ export enum HandlerCode {
   BookItemNotFound,
 
   // Borrow Errors
-  BorrowLimitExceeded,
   BorrowNotFound,
-  BorrowExists,
-  BorrowNoBookItemAvailable,
+  BorrowDueTimeLimit,
+  BorrowLimit,
+  BookAlreadyBorrowed,
+  BorrowNoBookItemAvailable
 }
 
 export class Handler {
