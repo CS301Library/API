@@ -49,6 +49,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         id: await RandomEssentials.randomHex(idLength, { checker: async (id) => await BookItem.exists({ id }) == null }),
         createTime: Date.now(),
         bookId,
+        name: `Book Item No. ${await BookItem.count({ bookId })}`,
         damaged: damaged ?? false,
         lost: lost ?? false
       })

@@ -51,6 +51,7 @@ export interface Book extends BaseResource {
 
 export interface BookItem extends BaseResource {
   bookId: string
+  name: string
 
   lost: boolean
   damaged: boolean
@@ -145,6 +146,8 @@ export class ResourceManager {
       ...baseSchema,
 
       bookId: { type: Mongoose.SchemaTypes.String, required: true },
+      name: { type: Mongoose.SchemaTypes.String, required: true },
+
       lost: { type: Mongoose.SchemaTypes.Boolean, required: true },
       damaged: { type: Mongoose.SchemaTypes.Boolean, required: true }
     }))
