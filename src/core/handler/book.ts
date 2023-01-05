@@ -115,16 +115,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
 
       let count = 0
       let skipId = true
-      for await (let book of searchString != null ? Book.find({ $text: { $search: `${searchString as string}` } }) : Book.find({})) {
-        if (typeof (book) === 'string') {
-          const eBook = await Book.findOne({ id: book })
-          if (eBook == null) {
-            continue
-          }
-
-          book = eBook
-        }
-
+      for await (const book of searchString != null ? Book.find({ $text: { $search: `${searchString as string}` } }) : Book.find({})) {
         if (publishTime != null) {
           if (publishTime !== book.publishTime) {
             continue

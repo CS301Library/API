@@ -6,7 +6,7 @@ import { BookItem, Borrow, BorrowStatus, ResourceDocument } from '../resource'
 
 export const handle = async (main: Handler, request: Express.Request, response: Express.Response): Promise<HandlerReturn> => {
   const { auth, method, pathArray } = request
-  const { resources: { Borrow, Book, Account, BookItem }, server: { options: { idLength } } } = main
+  const { resources: { Borrow, Book, Account, BookItem }, server: { options: { idLength, paginatedSizeLimit } } } = main
 
   if (auth == null) {
     return main.errorStatus(400, 'AuthRequired')
@@ -28,12 +28,32 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         return main.okStatus(200, main.leanObject(borrow))
       }
 
-      const { query: { accountId } } = request
+      const { query: { accountId, afterId, offset } } = request
+      const start = ((offset: number) => Number.isNaN(offset) ? 0 : offset)(offset != null ? Number(offset) : Number.NaN)
       const list: Borrow[] = []
+
+      let count = 0
+      let skipId = true
       for await (const borrow of Borrow.find(auth.account.isAdmin ? { ...(accountId != null ? { accountId } : {}) } : { accountId: auth.account.id })) {
-        if (borrow.status !== BorrowStatus.Returned) {
+        if ((afterId != null) && skipId) {
+          if (borrow.id === afterId) {
+            skipId = false
+          }
+
+          continue
+        }
+
+        if (borrow.status === BorrowStatus.Returned) {
+          continue
+        }
+
+        if (start <= count) {
           list.push(main.leanObject(borrow))
         }
+        if (list.length >= paginatedSizeLimit) {
+          break
+        }
+        count++
       }
 
       return main.okStatus(200, list)
