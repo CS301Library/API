@@ -28,13 +28,27 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         return main.okStatus(200, main.leanObject(borrow))
       }
 
-      const { query: { accountId, afterId, offset } } = request
+      const { query: { accountId, filterUsername, afterId, offset } } = request
       const start = ((offset: number) => Number.isNaN(offset) ? 0 : offset)(offset != null ? Number(offset) : Number.NaN)
       const list: Borrow[] = []
 
       let count = 0
       let skipId = true
-      for await (const borrow of Borrow.find(auth.account.isAdmin ? { ...(accountId != null ? { accountId } : {}) } : { accountId: auth.account.id })) {
+      const filter: Partial<Borrow> = {}
+
+      if (auth.account.isAdmin) {
+        if (typeof (accountId) === 'string') {
+          filter.accountId = accountId
+        }
+        if (typeof (filterUsername) === 'string') {
+          const account = await Account.findOne({ username: filterUsername.toLowerCase() })
+          filter.accountId = account?.id ?? ''
+        }
+      } else {
+        filter.accountId = auth.account.id
+      }
+
+      for await (const borrow of Borrow.find(filter)) {
         if ((afterId != null) && skipId) {
           if (borrow.id === afterId) {
             skipId = false
