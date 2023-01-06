@@ -28,7 +28,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         return main.okStatus(200, main.leanObject(borrow))
       }
 
-      const { query: { accountId, filterUsername, afterId, offset } } = request
+      const { query: { accountId, filterUsername, afterId, offset, pastDue: pastDueStr, status: statusStr } } = request
       const start = ((offset: number) => Number.isNaN(offset) ? 0 : offset)(offset != null ? Number(offset) : Number.NaN)
       const list: Borrow[] = []
 
@@ -40,6 +40,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         if (typeof (accountId) === 'string') {
           filter.accountId = accountId
         }
+
         if (typeof (filterUsername) === 'string') {
           const account = await Account.findOne({ username: filterUsername.toLowerCase() })
           filter.accountId = account?.id ?? ''
@@ -48,16 +49,46 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         filter.accountId = auth.account.id
       }
 
+      const status = (() => {
+        if (statusStr != null) {
+          switch (statusStr) {
+            case 'pending': return BorrowStatus.Pending
+            case 'borrowed': return BorrowStatus.Borrowed
+            case 'returned': return BorrowStatus.Returned
+          }
+        }
+      })()
+      const pastDue = (() => {
+        if (pastDueStr != null) {
+          switch (pastDueStr) {
+            case 'true': return true
+            case 'false': return false
+          }
+        }
+      })()
+
       for await (const borrow of Borrow.find(filter)) {
+        console.log(borrow.status, status)
         if ((afterId != null) && skipId) {
           if (borrow.id === afterId) {
             skipId = false
           }
 
           continue
-        }
-
-        if (borrow.status === BorrowStatus.Returned) {
+        } else if (
+          (
+            (status != null)
+              ? (status !== borrow.status)
+              : (borrow.status === BorrowStatus.Returned)
+          ) ||
+          (
+            (pastDue != null) &&
+            (
+              (pastDue && (borrow.dueTime > Date.now())) ||
+              ((!pastDue) && (borrow.dueTime < Date.now()))
+            )
+          )
+        ) {
           continue
         }
 
