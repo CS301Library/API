@@ -92,9 +92,10 @@ export class Handler {
     }
 
     const { body, query, pathArray, method, headers } = request
+    const { resources: { Log } } = this
 
     const log = (): void => {
-      console.log(JSON.stringify({
+      const requestLog = JSON.stringify({
         request: {
           path: pathArray.join('/'),
           body,
@@ -109,8 +110,16 @@ export class Handler {
             : null
         },
         response: payload
-      }, undefined, '  '))
+      }, undefined, '  ')
+
+      const logDocument = new Log({
+        content: requestLog
+      })
+
+      void logDocument.save()
+      console.log(requestLog)
     }
+
     await this.run(request, response)
       .then(async (data) => {
         if (data[0] === HandlerStatus.Redirect) {

@@ -9,6 +9,10 @@ export interface BaseResource {
 
 export type ResourceDocument<T> = Mongoose.Document<unknown, any, T> & T
 
+export interface Log extends BaseResource {
+  content: string
+}
+
 export interface Account extends BaseResource {
   givenName: string
   middleName?: string
@@ -80,6 +84,10 @@ export class ResourceManager {
       id: { type: Mongoose.SchemaTypes.String, required: true, unique: true, minlength: idLength, maxlength: idLength },
       createTime: { type: Mongoose.SchemaTypes.Number, required: true }
     }
+
+    this.Log = mongoose.model<Log>('Log', new mongoose.Schema({
+      content: { type: Mongoose.SchemaTypes.String, required: true }
+    }))
 
     this.Account = mongoose.model<Account>('Account', new mongoose.Schema({
       ...baseSchema,
@@ -156,6 +164,7 @@ export class ResourceManager {
   public readonly server: Server
   public readonly mongoose: Mongoose.Mongoose
 
+  public readonly Log: Mongoose.Model<Log>
   public readonly Account: Mongoose.Model<Account>
   public readonly Email: Mongoose.Model<Email>
   public readonly Login: Mongoose.Model<Login>
