@@ -8,7 +8,7 @@ const run = async (): Promise<void> => {
     username: process.env.username as string,
     password: process.env.password as string,
     dbName: process.env.db_name as string
-  })
+  }, { paginatedSizeLimit: 500 })
 
   await server.startup()
   const listener = HTTP.createServer(server.express)
