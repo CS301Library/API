@@ -157,6 +157,10 @@ export const handle = async (main: Handler, request: Express.Request, response: 
       }
 
       for (const borrow of borrows) {
+        if (borrow.status === BorrowStatus.Returned) {
+          continue
+        }
+
         if (borrow.bookId === book.id) {
           return main.errorStatus(400, 'BookAlreadyBorrowed')
         }
