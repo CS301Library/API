@@ -13,6 +13,7 @@ const run = async (): Promise<void> => {
   await server.startup()
   const listener = HTTP.createServer(server.express)
   listener.listen(8080)
+  console.log('Server is now listening.')
 }
 
 void run()
