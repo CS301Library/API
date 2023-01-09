@@ -117,7 +117,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
             size: buffer.length
           })
 
-          const fileBufferSize = 1024 * 1
+          const fileBufferSize = 1024 * 256
           await file.save()
           const fileBuffers: FileBuffer[] = []
           for (let position = 0; position < buffer.length; position += fileBufferSize) {
@@ -125,7 +125,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
               id: await RandomEssentials.randomHex(idLength, { checker: async (id) => await FileBuffer.exists({ id }) == null }),
               createTime: Date.now(),
               fileId: file.id,
-              data: buffer.subarray(position, fileBufferSize)
+              data: buffer.subarray(position, position + fileBufferSize)
             }
 
             fileBuffers.push(fileBuffer)
