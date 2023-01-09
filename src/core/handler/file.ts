@@ -20,13 +20,21 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         return main.errorStatus(404, 'FileNotFound')
       }
 
-      response.setHeader('Content-Length', file.size)
-      for await (const fileBuffer of FileBuffer.find({ fileId })) {
-        await new Promise<void>((resolve, reject) => response.write(fileBuffer.data, (error) => error != null ? reject(error) : resolve()))
+      if (pathArray[2] === 'data') {
+        response.setHeader('Content-Length', file.size)
+        for await (const fileBuffer of FileBuffer.find({ fileId })) {
+          await new Promise<void>((resolve, reject) => response.write(fileBuffer.data, (error) => error != null ? reject(error) : resolve()))
+        }
+
+        response.end()
+        return main.okStatus(200)
       }
 
-      response.end()
-      return main.okStatus(200)
+      if (file.accountId !== auth.account.id) {
+        return main.errorStatus(403, 'RoleInvalid')
+      }
+
+      return main.okStatus(200, main.leanObject(file))
     }
 
     case 'POST': {
