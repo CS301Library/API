@@ -11,7 +11,9 @@ export interface ServerOptions {
   maxBorrowedBooks: number
   idLength: number
   paginatedSizeLimit: number
+  uploadTokenExpiryDuration: number
   debug: boolean
+  uploadSizeLimit: number
 }
 
 export interface DatabaseCredentials {
@@ -30,6 +32,8 @@ export class Server {
       paginatedSizeLimit: 10,
       idLength: 32,
       debug: true,
+      uploadTokenExpiryDuration: 10000,
+      uploadSizeLimit: 1024 * 1024 * 16,
 
       ...options
     }

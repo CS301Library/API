@@ -74,6 +74,36 @@ export enum BorrowStatus {
   Pending, Borrowed, Returned
 }
 
+export interface UploadToken extends BaseResource {
+  accountId: string
+  expiry: number
+}
+
+export interface File extends BaseResource {
+  accountId: string
+
+  size: number
+}
+
+export interface FileBuffer extends BaseResource {
+  fileId: string
+  data: ArrayBuffer
+}
+
+export interface Image extends BaseResource {
+  accountId: string
+  fileId: string
+}
+
+export interface ImageQuality extends BaseResource {
+  imageId: string
+  qualityType: ImageDimensionType
+}
+
+export enum ImageDimensionType {
+  Thumbnail, Full, Source
+}
+
 export class ResourceManager {
   public constructor (server: Server) {
     this.server = server
@@ -150,7 +180,7 @@ export class ResourceManager {
       damaged: { type: Mongoose.SchemaTypes.Boolean, required: true }
     }))
 
-    this.Borrow = mongoose.model<Borrow>('Borrow', new Mongoose.Schema({
+    this.Borrow = mongoose.model<Borrow>('Borrow', new mongoose.Schema({
       ...baseSchema,
 
       bookItemId: { type: Mongoose.SchemaTypes.String, required: true },
@@ -158,6 +188,41 @@ export class ResourceManager {
       accountId: { type: Mongoose.SchemaTypes.String, required: true },
       dueTime: { type: Mongoose.SchemaTypes.Number, required: true },
       status: { type: Mongoose.SchemaTypes.Number, required: true }
+    }))
+
+    this.UploadToken = mongoose.model<UploadToken>('UploadToken', new mongoose.Schema({
+      ...baseSchema,
+
+      accountId: { type: Mongoose.SchemaTypes.String, required: true },
+      expiry: { type: Mongoose.SchemaTypes.Number, required: true }
+    }))
+
+    this.File = mongoose.model<File>('File', new mongoose.Schema({
+      ...baseSchema,
+
+      accountId: { type: Mongoose.SchemaTypes.String, required: true },
+      size: { type: Mongoose.SchemaTypes.Number, required: true }
+    }))
+
+    this.FileBuffer = mongoose.model<FileBuffer>('FileBuffer', new mongoose.Schema({
+      ...baseSchema,
+
+      fileId: { type: Mongoose.SchemaTypes.String, required: true },
+      data: { type: Mongoose.SchemaTypes.Buffer, required: true }
+    }))
+
+    this.Image = mongoose.model<Image>('Image', new mongoose.Schema({
+      ...baseSchema,
+
+      accountId: { type: Mongoose.SchemaTypes.String, required: true },
+      fileId: { type: Mongoose.SchemaTypes.String, required: true }
+    }))
+
+    this.ImageDimension = mongoose.model<ImageQuality>('ImageDimension', new mongoose.Schema({
+      ...baseSchema,
+
+      imageId: { type: Mongoose.SchemaTypes.String, required: true },
+      qualityType: { type: Mongoose.SchemaTypes.Number, required: true }
     }))
   }
 
@@ -172,4 +237,9 @@ export class ResourceManager {
   public readonly Book: Mongoose.Model<Book>
   public readonly BookItem: Mongoose.Model<BookItem>
   public readonly Borrow: Mongoose.Model<Borrow>
+  public readonly UploadToken: Mongoose.Model<UploadToken>
+  public readonly File: Mongoose.Model<File>
+  public readonly FileBuffer: Mongoose.Model<FileBuffer>
+  public readonly Image: Mongoose.Model<Image>
+  public readonly ImageDimension: Mongoose.Model<ImageQuality>
 }

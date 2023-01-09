@@ -62,7 +62,19 @@ export enum HandlerCode {
   BorrowDueTimeLimit,
   BorrowLimit,
   BookAlreadyBorrowed,
-  BorrowNoBookItemAvailable
+  BorrowNoBookItemAvailable,
+
+  // Upload Token
+  UploadTokenMaxCountReached,
+  UploadTokenNotFound,
+  UploadTokenAccountMismatch,
+
+  // File
+  FileUploadLimitReached,
+  FileUploadTimeout,
+  FileNotFound,
+
+  // Image
 }
 
 export class Handler {
@@ -217,6 +229,7 @@ export class Handler {
       case 'account': return await (await import('./handler/account')).handle(this, request, response)
       case 'book': return await (await import('./handler/book')).handle(this, request, response)
       case 'borrow': return await (await import('./handler/borrow')).handle(this, request, response)
+      case 'file': return await (await import('./handler/file')).handle(this, request, response)
 
       case '': return this.okStatus(200, { message: 'Welcome.' })
       default: return this.errorStatus(400, 'RequestInvalid')
