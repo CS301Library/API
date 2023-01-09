@@ -1,7 +1,7 @@
 import RandomEssentials from '@rizzzi/random-essentials'
 import Express from 'express'
 import { Handler, HandlerReturn } from '../handler'
-import { FileBuffer } from '../resource'
+import { File, FileBuffer, ResourceDocument } from '../resource'
 
 export const handle = async (main: Handler, request: Express.Request, response: Express.Response): Promise<HandlerReturn> => {
   const { auth, method, pathArray } = request
@@ -99,7 +99,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
             }
           })()
 
-          const timeoutTime = Date.now()
+          const timeoutTime = Date.now() + 15000
           // eslint-disable-next-line no-unmodified-loop-condition
           while (!done) {
             if (timeoutTime < Date.now()) {
@@ -110,7 +110,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
           }
 
           const buffer = Buffer.concat(buffers)
-          const file = new File({
+          const file: ResourceDocument<File> = new File({
             id: await RandomEssentials.randomHex(idLength, { checker: async (id) => await File.exists({ id }) == null }),
             createTime: Date.now(),
             accountId: auth.account.id,
