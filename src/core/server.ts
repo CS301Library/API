@@ -60,7 +60,13 @@ export class Server {
         if (request.header('Content-Type') === 'application/octet-stream') {
           next()
         } else {
-          requestJSONParser(request, response, next)
+          requestJSONParser(request, response, (error) => {
+            if (error != null) {
+              console.log(error)
+            }
+
+            next()
+          })
         }
       })
       express.use((request, response, next) => {
