@@ -55,7 +55,14 @@ export class Server {
     {
       const { sockets, options, handler, express } = this
 
-      express.use(Express.json({ type: 'application/json' }))
+      const requestJSONParser = Express.json({ type: 'application/json' })
+      express.use((request, response, next) => {
+        if (request.header('Content-Type') === 'application/octet-stream') {
+          next()
+        } else {
+          requestJSONParser(request, response, next)
+        }
+      })
       express.use((request, response, next) => {
         const { path } = request
         request.pathArray = path.split('/').map(path => path.trim()).filter((entry) => entry.length > 0)
