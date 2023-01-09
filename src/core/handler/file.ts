@@ -117,7 +117,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
             size: buffer.length
           })
 
-          const fileBufferSize = 1024 * 256
+          const fileBufferSize = 1024 * 1
           await file.save()
           const fileBuffers: FileBuffer[] = []
           for (let position = 0; position < buffer.length; position += fileBufferSize) {
