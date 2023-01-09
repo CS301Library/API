@@ -55,7 +55,7 @@ export class Server {
     {
       const { sockets, options, handler, express } = this
 
-      express.use(Express.json())
+      express.use(Express.json({ type: 'application/json' }))
       express.use((request, response, next) => {
         const { path } = request
         request.pathArray = path.split('/').map(path => path.trim()).filter((entry) => entry.length > 0)
