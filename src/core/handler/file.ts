@@ -70,7 +70,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
           }
 
           const buffers: Buffer[] = []
-          const bufferLength = Number.parseInt(request.header('Content-Type') ?? '0')
+          const bufferLength = Number.parseInt(request.header('Content-Length') ?? '0')
           if (Number.isNaN(bufferLength)) {
             return main.errorStatus(400, 'RequestInvalid')
           } else if (bufferLength >= uploadSizeLimit) {
