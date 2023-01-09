@@ -55,7 +55,7 @@ export class Server {
     {
       const { sockets, options, handler, express } = this
 
-      const requestJSONParser = Express.json({ type: 'application/json' })
+      const requestJSONParser = Express.json()
       express.use((request, response, next) => {
         if (request.header('Content-Type') === 'application/octet-stream') {
           next()
