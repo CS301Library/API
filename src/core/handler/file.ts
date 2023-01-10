@@ -7,10 +7,6 @@ export const handle = async (main: Handler, request: Express.Request, response: 
   const { auth, method, pathArray } = request
   const { resources: { File, FileBuffer, UploadToken }, server: { options: { idLength, uploadTokenExpiryDuration, uploadSizeLimit } } } = main
 
-  if (auth == null) {
-    return main.errorStatus(401, 'AuthRequired')
-  }
-
   switch (method) {
     case 'GET': {
       const fileId = pathArray[1]
@@ -30,13 +26,15 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         return main.okStatus(200)
       }
 
-      if (file.accountId !== auth.account.id) {
-        return main.errorStatus(403, 'RoleInvalid')
-      }
-
       return main.okStatus(200, main.leanObject(file))
     }
+  }
 
+  if (auth == null) {
+    return main.errorStatus(401, 'AuthRequired')
+  }
+
+  switch (method) {
     case 'POST': {
       switch (pathArray[1]) {
         case 'get-token': {
