@@ -47,7 +47,12 @@ export const handle = async (main: Handler, request: Express.Request, response: 
             expiry: Date.now() + uploadTokenExpiryDuration
           })
 
-          if (await UploadToken.count({ accountId: auth.account.id }) >= 1) {
+          for await (const uploadToken of UploadToken.find({ accountId: auth.account.id })) {
+            if (uploadToken.expiry < Date.now()) {
+              await uploadToken.delete()
+              continue
+            }
+
             return main.errorStatus(400, 'UploadTokenMaxCountReached')
           }
 
