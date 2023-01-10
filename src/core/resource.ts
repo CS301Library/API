@@ -51,6 +51,7 @@ export interface Book extends BaseResource {
   publishTime: number
   synopsis?: string
   background?: string
+  imageId?: string
 }
 
 export interface BookItem extends BaseResource {
@@ -93,15 +94,6 @@ export interface FileBuffer extends BaseResource {
 export interface Image extends BaseResource {
   accountId: string
   fileId: string
-}
-
-export interface ImageQuality extends BaseResource {
-  imageId: string
-  qualityType: ImageDimensionType
-}
-
-export enum ImageDimensionType {
-  Thumbnail, Full, Source
 }
 
 export class ResourceManager {
@@ -167,7 +159,8 @@ export class ResourceManager {
       author: { type: Mongoose.SchemaTypes.String, required: true },
       publishTime: { type: Mongoose.SchemaTypes.Number, required: true },
       synopsis: { type: Mongoose.SchemaTypes.String, required: false },
-      background: { type: Mongoose.SchemaTypes.String, required: false }
+      background: { type: Mongoose.SchemaTypes.String, required: false },
+      imageId: { type: Mongoose.SchemaTypes.String, required: false }
     })))
 
     this.BookItem = mongoose.model<BookItem>('BookItem', new mongoose.Schema({
@@ -217,13 +210,6 @@ export class ResourceManager {
       accountId: { type: Mongoose.SchemaTypes.String, required: true },
       fileId: { type: Mongoose.SchemaTypes.String, required: true }
     }))
-
-    this.ImageDimension = mongoose.model<ImageQuality>('ImageDimension', new mongoose.Schema({
-      ...baseSchema,
-
-      imageId: { type: Mongoose.SchemaTypes.String, required: true },
-      qualityType: { type: Mongoose.SchemaTypes.Number, required: true }
-    }))
   }
 
   public readonly server: Server
@@ -241,5 +227,4 @@ export class ResourceManager {
   public readonly File: Mongoose.Model<File>
   public readonly FileBuffer: Mongoose.Model<FileBuffer>
   public readonly Image: Mongoose.Model<Image>
-  public readonly ImageDimension: Mongoose.Model<ImageQuality>
 }

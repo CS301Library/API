@@ -6,7 +6,7 @@ import { Book, ResourceDocument } from '../resource'
 
 export const handle = async (main: Handler, request: Express.Request, response: Express.Response): Promise<HandlerReturn> => {
   const { pathArray, auth, method } = request
-  const { resources: { Book, BookItem }, server: { options: { paginatedSizeLimit, idLength } } } = main
+  const { resources: { Image, Book, BookItem }, server: { options: { paginatedSizeLimit, idLength } } } = main
 
   if (auth == null) {
     return main.errorStatus(401, 'AuthRequired')
@@ -38,15 +38,24 @@ export const handle = async (main: Handler, request: Express.Request, response: 
     }
 
     case 'PUT': {
-      const { body: { title, author, publishTime, synopsis, background } } = request
+      const { body: { title, author, publishTime, synopsis, background, imageId } } = request
       if (
         ((typeof (title) !== 'string') || (title.length === 0)) ||
         ((typeof (author) !== 'string') || (author.length === 0)) ||
         (typeof (publishTime) !== 'number') ||
         ((synopsis != null) && (typeof (synopsis) !== 'string')) ||
-        ((background != null) && (typeof (synopsis) !== 'string'))
+        ((background != null) && (typeof (synopsis) !== 'string')) ||
+        ((imageId != null) && (typeof (imageId) !== 'string'))
       ) {
         return main.errorStatus(400, 'ParametersInvalid')
+      }
+
+      const image = imageId != null
+        ? await Image.findOne({ id: imageId })
+        : undefined
+
+      if ((imageId != null) && (image == null)) {
+        return main.errorStatus(404, 'ImageNotFound')
       }
 
       let book: ResourceDocument<Book> | null
@@ -59,7 +68,8 @@ export const handle = async (main: Handler, request: Express.Request, response: 
           author,
           publishTime,
           synopsis: (synopsis != null) && (synopsis.length !== 0) ? synopsis : null,
-          background: (background != null) && (background.length !== 0) ? background : null
+          background: (background != null) && (background.length !== 0) ? background : null,
+          imageId: image?.id
         })
       } else {
         if (typeof (bookId) !== 'string') {
@@ -76,6 +86,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         book.publishTime = publishTime
         book.synopsis = (synopsis != null) && (synopsis.length !== 0) ? synopsis : null
         book.background = (background != null) && (background.length !== 0) ? background : null
+        book.imageId = image?.id
       }
 
       await book.save()
