@@ -38,6 +38,11 @@ export const handle = async (main: Handler, request: Express.Request, response: 
     case 'POST': {
       switch (pathArray[1]) {
         case 'get-token': {
+          const stats = await main.server.mongoose.connection.db.stats()
+          if (((stats.storageSize as number) / (1024 * 1024 * 500)) > 0.75) {
+            return main.errorStatus(503, 'UploadTokenDatabaseFull')
+          }
+
           const uploadToken = new UploadToken({
             id: await RandomEssentials.randomHex(idLength, { checker: async (id) => await UploadToken.exists({ id }) == null }),
             createTime: Date.now(),
