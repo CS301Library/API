@@ -21,7 +21,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         const borrow = await Borrow.findOne({ id: borrowId })
         if (borrow == null) {
           return main.errorStatus(404, 'BorrowNotFound')
-        } else if ((auth.account.id !== borrow.accountId) && (auth.account.isAdmin)) {
+        } else if ((auth.account.id !== borrow.accountId) && (!auth.account.isAdmin)) {
           return main.errorStatus(403, 'RoleInvalid')
         }
 
@@ -152,10 +152,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
       }
 
       const borrows = await Borrow.find({ accountId: account.id })
-      if (borrows.length >= 5) {
-        return main.errorStatus(400, 'BorrowLimit')
-      }
-
+      let nonReturnedItems = 0
       for (const borrow of borrows) {
         if (borrow.status === BorrowStatus.Returned) {
           continue
@@ -164,6 +161,11 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         if (borrow.bookId === book.id) {
           return main.errorStatus(400, 'BookAlreadyBorrowed')
         }
+
+        nonReturnedItems++
+      }
+      if (nonReturnedItems >= 5) {
+        return main.errorStatus(400, 'BorrowLimit')
       }
 
       const bookItems: Array<ResourceDocument<BookItem>> = []
