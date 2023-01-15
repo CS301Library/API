@@ -67,36 +67,6 @@ export const handle = async (main: Handler, request: Express.Request, response: 
               return main.okStatus(200, { id: session.id })
             }
 
-            case 'google': {
-              const { body: { tokenId } } = request
-              if (typeof (tokenId) !== 'string') {
-                return main.errorStatus(400, 'ParametersInvalid')
-              }
-              const token = await main.googleAuthClient.getTokenInfo(tokenId)
-              if (typeof (token.user_id) !== 'string') {
-                return main.errorStatus(400, 'GAuthUserIdNotAvailable')
-              }
-
-              const login = await Login.findOne({ signature: token.user_id, loginType: LoginType.Google })
-              if (login == null) {
-                return main.errorStatus(400, 'AuthNotAssociated')
-              }
-
-              const account = await Account.findOne({ id: login.accountId })
-              if (account == null) {
-                return main.errorStatus(404, 'AccountNotFound')
-              }
-
-              const session = new Session({
-                id: await RandomEssentials.randomHex(idLength, { checker: async (id) => await Session.exists({ id }) == null }),
-                accountId: account.id,
-                createTime: Date.now()
-              })
-
-              await session.save()
-              return main.okStatus(200, { id: session.id })
-            }
-
             default: return main.errorStatus(400, 'ParametersInvalid')
           }
         }
@@ -206,45 +176,6 @@ export const handle = async (main: Handler, request: Express.Request, response: 
           }
 
           switch (method) {
-            case 'google': {
-              const { body: { tokenId, addAsLogin } } = request
-
-              if (
-                (typeof (tokenId) !== 'string') ||
-                ((addAsLogin != null) && (typeof (addAsLogin) !== 'boolean'))
-              ) {
-                return main.errorStatus(400, 'ParametersInvalid')
-              }
-
-              const token = await main.googleAuthClient.getTokenInfo(tokenId)
-
-              if (typeof (token.email) !== 'string') {
-                return main.errorStatus(400, 'GAuthEmailNotAvailable')
-              } else if (typeof (token.user_id) !== 'string') {
-                return main.errorStatus(400, 'GAuthUserIdNotAvailable')
-              } else if (token.email_verified !== true) {
-                return main.errorStatus(400, 'GAuthEmailNotVerified')
-              } else if (`${email.name}@${email.domain}` !== `${token.email}`.toLowerCase()) {
-                return main.errorStatus(400, 'GAuthEmailMismatch')
-              }
-
-              if (addAsLogin === true) {
-                const login = new Login({
-                  createTime: Date.now(),
-                  id: await RandomEssentials.randomHex(idLength, { checker: async (id) => await Login.exists({ id }) != null }),
-                  accountId,
-                  loginType: LoginType.Google,
-                  signature: token.user_id
-                })
-
-                await login.save()
-              }
-
-              email.verified = true
-              await email.save()
-              return main.okStatus(200)
-            }
-
             default: return main.errorStatus(400, 'ParametersInvalid')
           }
         }

@@ -1,6 +1,5 @@
 import Express from 'express'
 import FS from 'fs'
-import * as Google from 'google-auth-library'
 
 import { Server } from './server'
 import { Account, ResourceDocument, ResourceManager, Session } from './resource'
@@ -83,14 +82,10 @@ export class Handler {
   public constructor (server: Server) {
     this.server = server
     this.resources = server.resources
-    this.googleAuthClient = new Google.OAuth2Client({
-      clientId: '354357584339-0f6h87ms3qgqoh0mhim81i5afrssaudd.apps.googleusercontent.com'
-    })
   }
 
   public readonly server: Server
   public readonly resources: ResourceManager
-  public readonly googleAuthClient: Google.OAuth2Client
 
   public async handle (request: Express.Request, response: Express.Response): Promise<void> {
     const payload: {
