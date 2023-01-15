@@ -2,7 +2,7 @@ import RandomEssentials from '@rizzzi/random-essentials'
 import Express from 'express'
 
 import { Handler, HandlerReturn } from '../handler'
-import { BookItem, Borrow, BorrowStatus, ResourceDocument } from '../resource'
+import { AccountRole, BookItem, Borrow, BorrowStatus, ResourceDocument } from '../resource'
 
 export const handle = async (main: Handler, request: Express.Request, response: Express.Response): Promise<HandlerReturn> => {
   const { auth, method, pathArray } = request
@@ -10,7 +10,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
 
   if (auth == null) {
     return main.errorStatus(400, 'AuthRequired')
-  } else if (['PATCH'].includes(method) && (!auth.account.isAdmin)) {
+  } else if (['PATCH'].includes(method) && (auth.account.role === AccountRole.User)) {
     return main.errorStatus(403, 'RoleInvalid')
   }
 
@@ -21,7 +21,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         const borrow = await Borrow.findOne({ id: borrowId })
         if (borrow == null) {
           return main.errorStatus(404, 'BorrowNotFound')
-        } else if ((auth.account.id !== borrow.accountId) && (!auth.account.isAdmin)) {
+        } else if ((auth.account.id !== borrow.accountId) && (auth.account.role === AccountRole.User)) {
           return main.errorStatus(403, 'RoleInvalid')
         }
 
@@ -36,7 +36,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
       let skipId = true
       const filter: Partial<Borrow> = {}
 
-      if (auth.account.isAdmin) {
+      if (auth.account.role !== AccountRole.User) {
         if (typeof (accountId) === 'string') {
           filter.accountId = accountId
         }
@@ -141,7 +141,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
       const account = await Account.findOne({ id: accountId })
       if (account == null) {
         return main.errorStatus(404, 'AccountNotFound')
-      } else if ((accountId !== auth.account.id) && (!auth.account.isAdmin)) {
+      } else if ((accountId !== auth.account.id) && (auth.account.role === AccountRole.User)) {
         return main.errorStatus(403, 'RoleInvalid')
       }
       const book = await Book.findOne({ id: bookId })

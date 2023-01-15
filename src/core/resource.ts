@@ -13,13 +13,17 @@ export interface Log extends BaseResource {
   content: string
 }
 
+export enum AccountRole {
+  User, Admin, PrimaryAdmin
+}
+
 export interface Account extends BaseResource {
   givenName: string
   middleName?: string
   familyName: string
+  role: AccountRole
 
   username: string
-  isAdmin: boolean
 }
 
 export interface Email extends BaseResource {
@@ -114,7 +118,7 @@ export class ResourceManager {
       familyName: { type: Mongoose.SchemaTypes.String, required: true },
 
       username: { type: Mongoose.SchemaTypes.String, required: true },
-      isAdmin: { type: Mongoose.SchemaTypes.Boolean, required: true }
+      role: { type: Mongoose.SchemaTypes.Number, required: true }
     }))
 
     this.Email = mongoose.model<Email>('Email', new mongoose.Schema({

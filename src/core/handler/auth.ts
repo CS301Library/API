@@ -3,7 +3,7 @@ import Bcrypt from 'bcrypt'
 import RandomEssentials from '@rizzzi/random-essentials'
 
 import { Handler, HandlerReturn } from '../handler'
-import { LoginType } from '../resource'
+import { AccountRole, LoginType } from '../resource'
 
 export const handle = async (main: Handler, request: Express.Request, response: Express.Response): Promise<HandlerReturn> => {
   const [{ method, auth, pathArray }, { resources: { Account, Session, Email, Login }, server: { options: { idLength } } }] = [request, main]
@@ -160,7 +160,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
             middleName: (middleName?.length ?? 0) > 0 ? middleName : null,
             familyName,
             username: username.toLowerCase(),
-            isAdmin: (await Account.find({})).length === 0
+            role: (await Account.find({})).length === 0 ? AccountRole.PrimaryAdmin : AccountRole.User
           })
 
           const email = new Email({

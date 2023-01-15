@@ -2,7 +2,7 @@ import RandomEssentials from '@rizzzi/random-essentials'
 import Express from 'express'
 
 import { Handler, HandlerReturn } from '../handler'
-import { Book, ResourceDocument } from '../resource'
+import { AccountRole, Book, ResourceDocument } from '../resource'
 
 export const handle = async (main: Handler, request: Express.Request, response: Express.Response): Promise<HandlerReturn> => {
   const { pathArray, auth, method } = request
@@ -16,7 +16,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
 
       default: return main.errorStatus(400, 'RequestInvalid')
     }
-  } else if (['PUT', 'DELETE'].includes(method) && (!auth.account.isAdmin)) {
+  } else if (['PUT', 'DELETE'].includes(method) && (auth.account.role === AccountRole.User)) {
     return main.errorStatus(403, 'RoleInvalid')
   }
 

@@ -1,7 +1,7 @@
 import Express from 'express'
 
 import { Handler, HandlerReturn } from '../handler'
-import { Account, ResourceDocument } from '../resource'
+import { Account, AccountRole, ResourceDocument } from '../resource'
 
 export const handle = async (main: Handler, request: Express.Request, response: Express.Response): Promise<HandlerReturn> => {
   const [{ auth, pathArray }, { resources: { Account }, server: { options: { paginatedSizeLimit } } }] = [request, main]
@@ -14,19 +14,24 @@ export const handle = async (main: Handler, request: Express.Request, response: 
   if (lookupString == null) {
     if (request.method !== 'GET') {
       return main.errorStatus(405, 'RequestInvalid')
-    } else if (!auth.account.isAdmin) {
+    } else if (auth.account.role === AccountRole.User) {
       return main.errorStatus(403, 'RoleInvalid')
     }
 
-    const [{ query: { offset, username, name, givenName, middleName, familyName, isAdmin, email: emailAddress } }, { resources: { Email } }] = [request, main]
+    const [{ query: { offset, username, role: roleStr, name, givenName, middleName, familyName, isAdmin, email: emailAddress } }, { resources: { Email } }] = [request, main]
     const start = ((offset: number) => Number.isNaN(offset) ? 0 : offset)(offset != null ? Number(offset) : Number.NaN)
     const list: any[] = []
+
+    const role: AccountRole | undefined = roleStr != null ? Number(roleStr) : undefined
+    if ((role != null) && (Number.isNaN(role) || (AccountRole[role] == null))) {
+      return main.errorStatus(400, 'ParametersInvalid')
+    }
 
     let count = 0
     for await (const account of Account.find({})) {
       if (
         ((typeof (username) === 'string') && (!account.username.toLowerCase().includes(username.toLowerCase()))) ||
-        ((typeof (isAdmin) === 'string') && (account.isAdmin !== (isAdmin === 'true')))
+        ((typeof (isAdmin) === 'string') && ((account.role !== AccountRole.User) !== (isAdmin === 'true')))
       ) {
         continue
       } else if (typeof (emailAddress) === 'string') {
@@ -46,7 +51,8 @@ export const handle = async (main: Handler, request: Express.Request, response: 
       } else if (
         ((typeof (givenName) === 'string') && (!account.givenName.toLowerCase().includes(givenName.toLowerCase()))) ||
         ((typeof (middleName) === 'string') && (account.middleName != null) && (!account.middleName.toLowerCase().includes(middleName.toLowerCase()))) ||
-        ((typeof (familyName) === 'string') && (!account.familyName.toLowerCase().includes(familyName.toLowerCase())))
+        ((typeof (familyName) === 'string') && (!account.familyName.toLowerCase().includes(familyName.toLowerCase()))) ||
+        ((typeof (role) === 'string') && (account.role !== role))
       ) {
         continue
       }
@@ -74,7 +80,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
 
   if (account == null) {
     return main.errorStatus(404, 'AccountNotFound')
-  } else if ((account.id !== auth.account.id) && (!auth.account.isAdmin)) {
+  } else if ((account.id !== auth.account.id) && (auth.account.role === AccountRole.User)) {
     return main.errorStatus(403, 'RoleInvalid')
   } else if (pathArray[2] != null) {
     switch (pathArray[2]) {
