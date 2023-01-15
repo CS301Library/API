@@ -141,6 +141,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
 
           await file.save()
           await FileBuffer.insertMany(fileBuffers)
+          await token.delete()
           return main.okStatus(200, file.id)
         }
       }
