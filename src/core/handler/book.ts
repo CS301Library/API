@@ -6,7 +6,7 @@ import { Book, ResourceDocument } from '../resource'
 
 export const handle = async (main: Handler, request: Express.Request, response: Express.Response): Promise<HandlerReturn> => {
   const { pathArray, auth, method } = request
-  const { resources: { Image, Book, BookItem }, server: { options: { paginatedSizeLimit, idLength } } } = main
+  const { resources: { File, Book, BookItem }, server: { options: { paginatedSizeLimit, idLength } } } = main
 
   if (auth == null) {
     return main.errorStatus(401, 'AuthRequired')
@@ -51,7 +51,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
       }
 
       const image = imageId != null
-        ? await Image.findOne({ id: imageId })
+        ? await File.findOne({ id: imageId })
         : undefined
 
       if ((imageId != null) && (image == null)) {

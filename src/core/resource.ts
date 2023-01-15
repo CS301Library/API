@@ -91,11 +91,6 @@ export interface FileBuffer extends BaseResource {
   data: ArrayBuffer
 }
 
-export interface Image extends BaseResource {
-  accountId: string
-  fileId: string
-}
-
 export class ResourceManager {
   public constructor (server: Server) {
     this.server = server
@@ -203,13 +198,6 @@ export class ResourceManager {
       fileId: { type: Mongoose.SchemaTypes.String, required: true },
       data: { type: Mongoose.SchemaTypes.Buffer, required: true }
     }))
-
-    this.Image = mongoose.model<Image>('Image', new mongoose.Schema({
-      ...baseSchema,
-
-      accountId: { type: Mongoose.SchemaTypes.String, required: true },
-      fileId: { type: Mongoose.SchemaTypes.String, required: true }
-    }))
   }
 
   public readonly server: Server
@@ -226,5 +214,4 @@ export class ResourceManager {
   public readonly UploadToken: Mongoose.Model<UploadToken>
   public readonly File: Mongoose.Model<File>
   public readonly FileBuffer: Mongoose.Model<FileBuffer>
-  public readonly Image: Mongoose.Model<Image>
 }

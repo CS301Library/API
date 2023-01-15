@@ -232,7 +232,6 @@ export class Handler {
       case 'book': return await (await import('./handler/book')).handle(this, request, response)
       case 'borrow': return await (await import('./handler/borrow')).handle(this, request, response)
       case 'file': return await (await import('./handler/file')).handle(this, request, response)
-      case 'image': return await (await import('./handler/image')).handle(this, request, response)
 
       case '': return this.okStatus(200, { message: 'Welcome.' })
       default: return this.errorStatus(400, 'RequestInvalid')
