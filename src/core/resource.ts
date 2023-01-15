@@ -55,6 +55,8 @@ export interface Book extends BaseResource {
   publishTime: number
   synopsis?: string
   background?: string
+  isbn: string
+  category?: string
   imageId?: string
 }
 
@@ -159,6 +161,8 @@ export class ResourceManager {
       publishTime: { type: Mongoose.SchemaTypes.Number, required: true },
       synopsis: { type: Mongoose.SchemaTypes.String, required: false },
       background: { type: Mongoose.SchemaTypes.String, required: false },
+      isbn: { type: Mongoose.SchemaTypes.String, required: true },
+      category: { type: Mongoose.SchemaTypes.String, required: false },
       imageId: { type: Mongoose.SchemaTypes.String, required: false }
     })))
 

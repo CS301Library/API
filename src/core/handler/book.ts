@@ -38,14 +38,16 @@ export const handle = async (main: Handler, request: Express.Request, response: 
     }
 
     case 'PUT': {
-      const { body: { title, author, publishTime, synopsis, background, imageId } } = request
+      const { body: { title, author, publishTime, synopsis, background, isbn, category, imageId } } = request
       if (
         ((typeof (title) !== 'string') || (title.length === 0)) ||
         ((typeof (author) !== 'string') || (author.length === 0)) ||
+        ((typeof (isbn) !== 'string') || (isbn.length === 0)) ||
         (typeof (publishTime) !== 'number') ||
         ((synopsis != null) && (typeof (synopsis) !== 'string')) ||
         ((background != null) && (typeof (synopsis) !== 'string')) ||
-        ((imageId != null) && (typeof (imageId) !== 'string'))
+        ((imageId != null) && (typeof (imageId) !== 'string')) ||
+        ((category != null) && (typeof (category) !== 'string'))
       ) {
         return main.errorStatus(400, 'ParametersInvalid')
       }
@@ -69,7 +71,9 @@ export const handle = async (main: Handler, request: Express.Request, response: 
           publishTime,
           synopsis: (synopsis != null) && (synopsis.length !== 0) ? synopsis : null,
           background: (background != null) && (background.length !== 0) ? background : null,
-          imageId: image?.id
+          isbn,
+          imageId: image?.id,
+          category
         })
       } else {
         if (typeof (bookId) !== 'string') {
@@ -86,7 +90,9 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         book.publishTime = publishTime
         book.synopsis = (synopsis != null) && (synopsis.length !== 0) ? synopsis : null
         book.background = (background != null) && (background.length !== 0) ? background : null
+        book.isbn = isbn
         book.imageId = image?.id
+        book.category = category
       }
 
       await book.save()
@@ -104,7 +110,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         return main.okStatus(200, main.leanObject(book))
       }
 
-      const { query: { offset, afterId, searchString, publishTime: publishTimeStr, publishTimeStart: publishTimeStartStr, publishTimeStop: publishTimeStopStr } } = request
+      const { query: { offset, afterId, isbn, category, searchString, publishTime: publishTimeStr, publishTimeStart: publishTimeStartStr, publishTimeStop: publishTimeStopStr } } = request
       const start = ((offset: number) => Number.isNaN(offset) ? 0 : offset)(offset != null ? Number(offset) : Number.NaN)
       const list: Book[] = []
 
@@ -138,7 +144,9 @@ export const handle = async (main: Handler, request: Express.Request, response: 
           continue
         }
 
-        if ((afterId != null) && skipId) {
+        if ((isbn != null) && (book.isbn !== isbn)) {
+          continue
+        } else if ((afterId != null) && skipId) {
           if (book.id === afterId) {
             skipId = false
           }
@@ -146,9 +154,26 @@ export const handle = async (main: Handler, request: Express.Request, response: 
           continue
         }
 
+        if ((typeof (category) === 'string') && (book.category != null)) {
+          const categorySplit = book.category.split(',')
+          let matches = false
+
+          for (const categorySplitEntry of categorySplit) {
+            if (category.toLowerCase() === categorySplitEntry.toLowerCase().trim()) {
+              matches = true
+              continue
+            }
+          }
+
+          if (!matches) {
+            continue
+          }
+        }
+
         if (start <= count) {
           list.push(main.leanObject(book))
         }
+
         if (list.length >= paginatedSizeLimit) {
           break
         }
