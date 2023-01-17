@@ -2,11 +2,11 @@ import RandomEssentials from '@rizzzi/random-essentials'
 import Express from 'express'
 
 import { Handler, HandlerReturn } from '../handler'
-import { AccountRole, BookItem } from '../resource'
+import { AccountRole, BookItem, BorrowStatus, ResourceDocument } from '../resource'
 
 export const handle = async (main: Handler, request: Express.Request, response: Express.Response): Promise<HandlerReturn> => {
   const { pathArray, auth, method } = request
-  const { resources: { Book, BookItem }, server: { options: { paginatedSizeLimit, idLength } } } = main
+  const { resources: { Book, BookItem, Borrow }, server: { options: { paginatedSizeLimit, idLength } } } = main
 
   if (auth == null) {
     return main.errorStatus(401, 'AuthRequired')
@@ -83,6 +83,8 @@ export const handle = async (main: Handler, request: Express.Request, response: 
     }
 
     case 'GET': {
+      const isBookItemAvailable = async (bookItem: ResourceDocument<BookItem>): Promise<boolean> => await Borrow.countDocuments({ bookItemId: bookItem.id, $nor: [{ status: BorrowStatus.Returned }] }) < 1
+
       const bookItemId = pathArray[3]
       if (bookItemId != null) {
         const bookItem = await BookItem.findOne({ id: bookItemId, bookId })
@@ -91,7 +93,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
           return main.errorStatus(404, 'BookItemNotFound')
         }
 
-        return main.okStatus(200, main.leanObject(bookItem))
+        return main.okStatus(200, Object.assign(main.leanObject(bookItem), { isAvailable: await isBookItemAvailable(bookItem) }))
       }
 
       const { query: { offset, afterId, damaged: damagedStr, lost: lostStr } } = request
@@ -120,7 +122,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         }
 
         if (start <= count) {
-          list.push(main.leanObject(bookItem))
+          list.push(Object.assign(main.leanObject(bookItem), { isAvailable: await isBookItemAvailable(bookItem) }))
         }
         if (list.length >= paginatedSizeLimit) {
           break
