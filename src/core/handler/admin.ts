@@ -1,11 +1,11 @@
 import Express from 'express'
 
 import { Handler, HandlerReturn } from '../handler'
-import { Account, AccountRole } from '../resource'
+import { Account, AccountRole, BorrowStatus } from '../resource'
 
 export const handle = async (main: Handler, request: Express.Request, response: Express.Response): Promise<HandlerReturn> => {
   const { auth, method, pathArray } = request
-  const { resources: { Account } } = main
+  const { resources: { Account, Borrow } } = main
 
   if (auth == null) {
     return main.errorStatus(401, 'AuthRequired')
@@ -13,17 +13,31 @@ export const handle = async (main: Handler, request: Express.Request, response: 
 
   switch (method) {
     case 'GET': {
-      if (auth.account.role === AccountRole.User) {
-        return main.errorStatus(403, 'RoleInvalid')
+      switch (pathArray[1] ?? '') {
+        case 'greet': {
+          const borrowedBooksToday = await Borrow.count({ status: BorrowStatus.Borrowed, createTime: { $gt: (new Date(new Date().toISOString().slice(0, 10)).getTime()) } })
+
+          return main.okStatus(200, {
+            borrowedBooksToday
+          })
+        }
+
+        case '': {
+          if (auth.account.role === AccountRole.User) {
+            return main.errorStatus(403, 'RoleInvalid')
+          }
+
+          const accounts: Account[] = []
+
+          for await (const account of Account.find({ $nor: [{ role: AccountRole.User }] })) {
+            accounts.push(main.leanObject(account))
+          }
+
+          return main.okStatus(200, accounts)
+        }
+
+        default: return main.errorStatus(400, 'RequestInvalid')
       }
-
-      const accounts: Account[] = []
-
-      for await (const account of Account.find({ $nor: [{ role: AccountRole.User }] })) {
-        accounts.push(main.leanObject(account))
-      }
-
-      return main.okStatus(200, accounts)
     }
 
     case 'POST': {
