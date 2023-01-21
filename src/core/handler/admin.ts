@@ -66,7 +66,10 @@ export const handle = async (main: Handler, request: Express.Request, response: 
       const { body: { accountId } } = request
       if (typeof (accountId) !== 'string') {
         return main.errorStatus(400, 'ParametersInvalid')
+      } else if (auth.account.id === accountId) {
+        return main.errorStatus(403, 'RoleInvalid')
       }
+
       const account = await Account.findOne({ id: accountId })
       if (account == null) {
         return main.errorStatus(404, 'AccountNotFound')
