@@ -3,10 +3,11 @@ import Express from 'express'
 
 import { Handler, HandlerReturn } from '../handler'
 import { AccountRole, Book, ResourceDocument } from '../resource'
+import { isBookItemAvailable } from './book-item'
 
 export const handle = async (main: Handler, request: Express.Request, response: Express.Response): Promise<HandlerReturn> => {
   const { pathArray, auth, method } = request
-  const { resources: { File, Book, BookItem }, server: { options: { paginatedSizeLimit, idLength } } } = main
+  const { resources: { File, Book, BookItem, Borrow }, server: { options: { paginatedSizeLimit, idLength } } } = main
 
   if (auth == null) {
     return main.errorStatus(401, 'AuthRequired')
@@ -107,7 +108,15 @@ export const handle = async (main: Handler, request: Express.Request, response: 
           return main.errorStatus(404, 'BookNotFound')
         }
 
-        return main.okStatus(200, main.leanObject(book))
+        const bookItems = await BookItem.find({ bookId: book.id })
+        let availableBookItemCount = 0
+        for (const bookItem of bookItems) {
+          if (await isBookItemAvailable(Borrow, bookItem)) {
+            availableBookItemCount++
+          }
+        }
+
+        return main.okStatus(200, Object.assign(main.leanObject(book), { availableBookItemCount }))
       }
 
       const { query: { offset, afterId, isbn, category, searchString, publishTime: publishTimeStr, publishTimeStart: publishTimeStartStr, publishTimeStop: publishTimeStopStr } } = request
@@ -171,7 +180,15 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         }
 
         if (start <= count) {
-          list.push(main.leanObject(book))
+          const bookItems = await BookItem.find({ bookId: book.id })
+          let availableBookItemCount = 0
+          for (const bookItem of bookItems) {
+            if (await isBookItemAvailable(Borrow, bookItem)) {
+              availableBookItemCount++
+            }
+          }
+
+          list.push(Object.assign(main.leanObject(book), { availableBookItemCount }))
         }
 
         if (list.length >= paginatedSizeLimit) {

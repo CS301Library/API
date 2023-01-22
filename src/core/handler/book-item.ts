@@ -1,8 +1,11 @@
+import Mongoose from 'mongoose'
 import RandomEssentials from '@rizzzi/random-essentials'
 import Express from 'express'
 
 import { Handler, HandlerReturn } from '../handler'
-import { AccountRole, BookItem, BorrowStatus, ResourceDocument } from '../resource'
+import { AccountRole, BookItem, Borrow, BorrowStatus, ResourceDocument } from '../resource'
+
+export const isBookItemAvailable = async (model: Mongoose.Model<Borrow>, bookItem: ResourceDocument<BookItem>): Promise<boolean> => await model.countDocuments({ bookItemId: bookItem.id, $nor: [{ status: BorrowStatus.Returned }] }) < 1
 
 export const handle = async (main: Handler, request: Express.Request, response: Express.Response): Promise<HandlerReturn> => {
   const { pathArray, auth, method } = request
@@ -83,8 +86,6 @@ export const handle = async (main: Handler, request: Express.Request, response: 
     }
 
     case 'GET': {
-      const isBookItemAvailable = async (bookItem: ResourceDocument<BookItem>): Promise<boolean> => await Borrow.countDocuments({ bookItemId: bookItem.id, $nor: [{ status: BorrowStatus.Returned }] }) < 1
-
       const bookItemId = pathArray[3]
       if (bookItemId != null) {
         const bookItem = await BookItem.findOne({ id: bookItemId, bookId })
@@ -93,7 +94,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
           return main.errorStatus(404, 'BookItemNotFound')
         }
 
-        return main.okStatus(200, Object.assign(main.leanObject(bookItem), { isAvailable: await isBookItemAvailable(bookItem) }))
+        return main.okStatus(200, Object.assign(main.leanObject(bookItem), { isAvailable: await isBookItemAvailable(Borrow, bookItem) }))
       }
 
       const { query: { offset, afterId, damaged: damagedStr, lost: lostStr } } = request
@@ -122,7 +123,7 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         }
 
         if (start <= count) {
-          list.push(Object.assign(main.leanObject(bookItem), { isAvailable: await isBookItemAvailable(bookItem) }))
+          list.push(Object.assign(main.leanObject(bookItem), { isAvailable: await isBookItemAvailable(Borrow, bookItem) }))
         }
         if (list.length >= paginatedSizeLimit) {
           break
