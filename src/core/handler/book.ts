@@ -101,6 +101,8 @@ export const handle = async (main: Handler, request: Express.Request, response: 
     }
 
     case 'GET': {
+      const { query } = request
+
       const bookId = pathArray[1]
       if (bookId != null) {
         const book = await Book.findOne({ id: bookId })
@@ -108,18 +110,21 @@ export const handle = async (main: Handler, request: Express.Request, response: 
           return main.errorStatus(404, 'BookNotFound')
         }
 
-        const bookItems = await BookItem.find({ bookId: book.id })
         let availableBookItemCount = 0
-        for (const bookItem of bookItems) {
-          if (await isBookItemAvailable(Borrow, bookItem)) {
-            availableBookItemCount++
+
+        if (!('disableBookItemCounting' in query)) {
+          const bookItems = await BookItem.find({ bookId: book.id })
+          for (const bookItem of bookItems) {
+            if (await isBookItemAvailable(Borrow, bookItem)) {
+              availableBookItemCount++
+            }
           }
         }
 
         return main.okStatus(200, Object.assign(main.leanObject(book), { availableBookItemCount }))
       }
 
-      const { query: { offset, afterId, isbn, category, searchString, publishTime: publishTimeStr, publishTimeStart: publishTimeStartStr, publishTimeStop: publishTimeStopStr } } = request
+      const { offset, afterId, isbn, category, searchString, publishTime: publishTimeStr, publishTimeStart: publishTimeStartStr, publishTimeStop: publishTimeStopStr } = query
       const start = ((offset: number) => Number.isNaN(offset) ? 0 : offset)(offset != null ? Number(offset) : Number.NaN)
       const list: Book[] = []
 
@@ -180,11 +185,14 @@ export const handle = async (main: Handler, request: Express.Request, response: 
         }
 
         if (start <= count) {
-          const bookItems = await BookItem.find({ bookId: book.id })
           let availableBookItemCount = 0
-          for (const bookItem of bookItems) {
-            if (await isBookItemAvailable(Borrow, bookItem)) {
-              availableBookItemCount++
+
+          if (!('disableBookItemCounting' in query)) {
+            const bookItems = await BookItem.find({ bookId: book.id })
+            for (const bookItem of bookItems) {
+              if (await isBookItemAvailable(Borrow, bookItem)) {
+                availableBookItemCount++
+              }
             }
           }
 
